@@ -1,0 +1,75 @@
+{
+  "language": "ESP",
+  "displayLanguage": "ESPAÑOL",
+  "showtimes": [
+    {
+      "format": {
+        "icon": "",
+        "name": "2D",
+        "__typename": "IconInfo"
+      },
+      "sessionId": "51419",
+      "datetime": "2026-07-27T13:45:00",
+      "screen": "2",
+      "experience": null,
+      "movieVistaId": "HO00032576",
+      "cinemaVistaId": "611",
+      "alerts": [],
+      "availability": "",
+      "isAllocatedSeating": true,
+      "__typename": "ShowtimesInfo"
+    },
+    {
+      "format": {
+        "icon": "",
+        "name": "2D",
+        "__typename": "IconInfo"
+      },
+      "sessionId": "51420",
+      "datetime": "2026-07-27T16:10:00",
+      "screen": "2",
+      "experience": null,
+      "movieVistaId": "HO00032576",
+      "cinemaVistaId": "611",
+      "alerts": [],
+      "availability": "",
+      "isAllocatedSeating": true,
+      "__typename": "ShowtimesInfo"
+    },
+    {
+      "format": {
+        "icon": "",
+        "name": "2D",
+        "__typename": "IconInfo"
+      },
+      "sessionId": "51421",
+      "datetime": "2026-07-27T19:00:00",
+      "screen": "2",
+      "experience": null,
+      "movieVistaId": "HO00032576",
+      "cinemaVistaId": "611",
+      "alerts": [],
+      "availability": "",
+      "isAllocatedSeating": true,
+      "__typename": "ShowtimesInfo"
+    },
+    {
+      "format": {
+        "icon": "",
+        "name": "2D",
+        "__typename": "IconInfo"
+      },
+      "sessionId": "51422",
+      "datetime": "2026-07-27T21:15:00",
+      "screen": "2",
+      "experience": null,
+      "movieVistaId": "HO00032576",
+      "cinemaVistaId": "611",
+      "alerts": [],
+      "availability": "",
+      "isAllocatedSeating": true,
+      "__typename": "ShowtimesInfo"
+    }
+  ],
+  "__typename": "LanguagesInfo"
+}

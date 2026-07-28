@@ -1,0 +1,129 @@
+{
+  "data": {
+    "countries": [
+      {
+        "name": "México",
+        "countryId": "MX",
+        "icon": "https://pimcore-content.cinepolis.com/assets/Countries/Mexico/En/Mexico.svg",
+        "languages": [
+          {
+            "name": "Español",
+            "languageId": "es",
+            "__typename": "Language"
+          },
+          {
+            "name": "English",
+            "languageId": "en",
+            "__typename": "Language"
+          }
+        ],
+        "__typename": "Country"
+      },
+      {
+        "name": "India",
+        "countryId": "IN",
+        "icon": "https://pimcore-content.cinepolis.com/assets/Countries/India/Ca/IN_36.svg",
+        "languages": [
+          {
+            "name": "English",
+            "languageId": "en",
+            "__typename": "Language"
+          },
+          {
+            "name": "Hindi",
+            "languageId": "hi",
+            "__typename": "Language"
+          }
+        ],
+        "__typename": "Country"
+      },
+      {
+        "name": "España",
+        "countryId": "ES",
+        "icon": "https://pimcore-content.cinepolis.com/assets/Countries/España/En/ES.svg",
+        "languages": [
+          {
+            "name": "Español",
+            "languageId": "es",
+            "__typename": "Language"
+          },
+          {
+            "name": "English",
+            "languageId": "en",
+            "__typename": "Language"
+          },
+          {
+            "name": "Català",
+            "languageId": "ca",
+            "__typename": "Language"
+          }
+        ],
+        "__typename": "Country"
+      },
+      {
+        "name": "Chile",
+        "countryId": "CL",
+        "icon": "https://pimcore-content.cinepolis.com/assets/Countries/Chile/Ca/CH_20.svg",
+        "languages": [
+          {
+            "name": "Español",
+            "languageId": "es",
+            "__typename": "Language"
+          },
+          {
+            "name": "English",
+            "languageId": "en",
+            "__typename": "Language"
+          }
+        ],
+        "__typename": "Country"
+      },
+      {
+        "name": "Argentina",
+        "countryId": "AR",
+        "icon": "https://pimcore-content.cinepolis.com/assets/Countries/Argentina/Ca/AR_16.svg",
+        "languages": [
+          {
+            "name": "Español",
+            "languageId": "es",
+            "__typename": "Language"
+          },
+          {
+            "name": "English",
+            "languageId": "en",
+            "__typename": "Language"
+          }
+        ],
+        "__typename": "Country"
+      },
+      {
+        "name": "Global",
+        "countryId": "GLOBAL",
+        "icon": "https://pimcore-content.cinepolis.com/assets/Countries/Global/Ca/no_image_7.png",
+        "languages": [
+          {
+            "name": "English",
+            "languageId": "en",
+            "__typename": "Language"
+          },
+          {
+            "name": "Español",
+            "languageId": "es",
+            "__typename": "Language"
+          },
+          {
+            "name": "Hindi",
+            "languageId": "hi",
+            "__typename": "Language"
+          },
+          {
+            "name": "Català",
+            "languageId": "ca",
+            "__typename": "Language"
+          }
+        ],
+        "__typename": "Country"
+      }
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+# ============================================================
+# .gitignore - Cinépolis Proyecto Vision
+# ============================================================
+
+# ----- Variables de entorno y secretos -----
+.env
+.env.local
+.env.production
+*.secret
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ----- Entornos virtuales -----
+venv/
+env/
+.venv/
+.env/
+ENV/
+
+# ----- Pytest / Tests -----
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# ----- IDEs -----
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ----- Node.js / Frontend -----
+node_modules/
+dist/
+build/
+.next/
+
+# ----- Logs -----
+*.log
+logs/
+
+# ----- Archivos del sistema -----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ----- Archivos temporales de Workers -----
+workers/*.json
+workers/*.csv
+workers/*.html
+workers/*.sql

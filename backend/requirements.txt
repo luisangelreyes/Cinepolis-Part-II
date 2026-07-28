@@ -1,0 +1,49 @@
+# ============================================================
+# requirements.txt - Cinépolis Proyecto Vision Backend
+# ============================================================
+# Para instalar todo: pip install -r requirements.txt
+# ============================================================
+
+# ----- API Framework -----
+fastapi==0.139.0
+uvicorn==0.50.0
+starlette==1.3.1
+
+# ----- Base de Datos -----
+SQLAlchemy==2.0.51
+psycopg2-binary==2.9.12
+greenlet==3.3.2
+
+# ----- Validación de Datos -----
+pydantic==2.13.4
+pydantic_core==2.46.4
+annotated-types==0.7.0
+
+# ----- Variables de Entorno -----
+python-dotenv==1.2.2
+
+# ----- Utilidades HTTP (para workers/scrapers) -----
+requests==2.32.5
+curl_cffi==0.14.0
+
+# ----- Workers / Scraping -----
+playwright==1.58.0
+pyee==13.0.1
+
+# ----- Procesamiento de Datos (workers) -----
+pandas==3.0.1
+numpy==2.4.3
+openpyxl==3.1.5
+
+# ----- Dependencias transitivas -----
+anyio==4.14.1
+certifi==2026.2.25
+charset-normalizer==3.4.5
+click==8.4.2
+colorama==0.4.6
+h11==0.16.0
+idna==3.11
+python-dateutil==2.9.0.post0
+six==1.17.0
+typing_extensions==4.15.0
+urllib3==2.6.3

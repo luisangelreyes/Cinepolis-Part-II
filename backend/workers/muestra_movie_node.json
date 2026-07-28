@@ -1,0 +1,177 @@
+{
+  "id": "la-odisea",
+  "countryId": "MX",
+  "name": "La Odisea",
+  "originalName": "The Odyssey",
+  "distributor": "Universal",
+  "rating": "B",
+  "ratingDescription": "Para adolescentes de 12 años en adelante.\nLa narrativa puede ser compleja. Presenta cierto grado de violencia, no extrema, por motivos específicos y no vinculada con lo sexual, poniendo en claro sus consecuencias. Los desnudos son breves y no detallados y las escenas sexuales sólo sugeridas. Se puede tratar el tema de las adicciones y las drogas pero sin exhibir su consumo. La violencia verbal no puede ser extrema.",
+  "position": "2",
+  "genre": [
+    "ACCIÓN",
+    "ÉPICA"
+  ],
+  "synopsis": "El legendario Odiseo enfrenta peligros épicos en su viaje de regreso a casa tras la Guerra de Troya. Se topa con criaturas míticas y dioses caprichosos, superando obstáculos increíbles antes de reunirse con su amada Penélope.",
+  "length": "172 min",
+  "availableForSale": true,
+  "alerts": [],
+  "releaseDate": "2026-07-16T06:00",
+  "languages": [
+    "es",
+    "en"
+  ],
+  "formats": [
+    "2D"
+  ],
+  "tags": [],
+  "media": [
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "movie_card",
+      "sizes": {
+        "large": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/18_Movie_Card_900x900px_/",
+        "medium": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/18_Movie_Card_900x900px_/",
+        "small": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/18_Movie_Card_900x900px_/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "header_purchase_flow",
+      "sizes": {
+        "large": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/12_Header_flujo_de_compra_1440x502px_/",
+        "medium": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/12_Header_flujo_de_compra_1440x502px_/",
+        "small": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/12_Header_flujo_de_compra_1440x502px_/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "poster",
+      "sizes": {
+        "large": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/9_P_ster_720x1022px__2/",
+        "medium": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/19_P_ster_107x160px__2/",
+        "small": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/21_P_ster_80x80px__2/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "header_movie_detail",
+      "sizes": {
+        "large": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/5_Header_movie_details_1440x900px__2/",
+        "medium": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/5_Header_movie_details_1440x900px__2/",
+        "small": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/5_Header_movie_details_1440x900px__2/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.mp4",
+      "type": "video",
+      "code": "trailer_mp4",
+      "sizes": {
+        "large": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/6a0df392ebc25laodisea/",
+        "medium": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/6a0df392ebc25laodisea/",
+        "small": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/6a0df392ebc25laodisea/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/3_2/",
+        "medium": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/3_2/",
+        "small": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/3_2/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/4/",
+        "medium": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/4/",
+        "small": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/4/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/5/",
+        "medium": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/5/",
+        "small": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/5/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/7_1/",
+        "medium": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/7_1/",
+        "small": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/7_1/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/8/",
+        "medium": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/8/",
+        "small": "/pimcore/18924/assets/Mexico/Tickets/Movies/LaOdisea/Es/8/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    }
+  ],
+  "cities": [],
+  "cinemas": [],
+  "categories": [
+    "now-playing"
+  ],
+  "experiences": [
+    {
+      "icon": "",
+      "name": "Tradicional",
+      "__typename": "ResourceStatic"
+    },
+    {
+      "icon": "/resources/mx/icons/experiences/4DX.svg",
+      "name": "4DX",
+      "__typename": "ResourceStatic"
+    },
+    {
+      "icon": "/resources/mx/icons/experiences/IMAX.svg",
+      "name": "IMAX",
+      "__typename": "ResourceStatic"
+    },
+    {
+      "icon": "/resources/mx/icons/experiences/XE.svg",
+      "name": "XE",
+      "__typename": "ResourceStatic"
+    }
+  ],
+  "__typename": "Movie"
+}
