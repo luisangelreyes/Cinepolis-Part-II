@@ -17,20 +17,22 @@ import json
 import time
 
 # ─── CONFIGURACIÓN ────────────────────────────────────────────────────────────
-TMDB_API_KEY = "TU_API_KEY_AQUI"   # ← Pon aquí tu API key de TMDB
+TMDB_API_KEY = "097fd457526d3f04a7ee9a8cc001bf60"   # ← Pon aquí tu API key de TMDB
 DB_URL = "postgresql://postgres:1234@localhost:5432/secret_wars"
 TMDB_BASE = "https://api.themoviedb.org/3"
 # ──────────────────────────────────────────────────────────────────────────────
 
 
 def tmdb_get(endpoint, params=None):
-    """Hace una petición GET a TMDB y devuelve el JSON."""
+    """Hace una petición GET a TMDB usando Bearer Token (compatible con JWT)."""
     p = params or {}
-    p["api_key"] = TMDB_API_KEY
     p["language"] = "es-MX"
     url = f"{TMDB_BASE}{endpoint}?{urllib.parse.urlencode(p)}"
+    req = urllib.request.Request(url)
+    req.add_header("Authorization", f"Bearer {TMDB_API_KEY}")
+    req.add_header("Accept", "application/json")
     try:
-        with urllib.request.urlopen(url, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:
             return json.loads(resp.read().decode())
     except Exception as e:
         print(f"      ⚠️  Error TMDB: {e}")

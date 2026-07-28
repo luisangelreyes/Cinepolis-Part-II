@@ -23,8 +23,8 @@ def get_pelicula(pelicula_id: int, db: Session):
         ORDER BY pp.rol DESC, per.nombre
     """), {"pid": pelicula_id}).fetchall()
 
-    pelicula["director"] = next((e.nombre for e in elenco if e.rol == "Director"), None)
-    pelicula["actores"] = [e.nombre for e in elenco if e.rol == "Actor"]
+    pelicula["director"] = next((e.nombre for e in elenco if e.rol == "director"), None)
+    pelicula["actores"] = [e.nombre for e in elenco if e.rol == "actor"]
 
     return pelicula
 

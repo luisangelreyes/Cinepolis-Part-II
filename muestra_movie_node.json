@@ -1,0 +1,164 @@
+{
+  "id": "la-negociacion",
+  "countryId": "MX",
+  "name": "La Negociación",
+  "originalName": "Dead Man’s Wire",
+  "distributor": "Canibal",
+  "rating": "TBC",
+  "ratingDescription": " ",
+  "position": "112",
+  "genre": [
+    "SUSPENSO",
+    "CRIMEN"
+  ],
+  "synopsis": "En 1977. Tras ser estafado por un banco, Tony Kiritsis se presenta en sus oficinas y toma como rehén al hijo del presidente de la compañía, atándole al cuello un dispositivo mortal conectado al gatillo de una escopeta. Exige que le devuelvan su dinero, además de una disculpa pública que será retransmitida por televisión y vista por millones en prime time. Esta es la historia real de un crimen que conmocionó a toda una nación.",
+  "length": "105 min",
+  "availableForSale": false,
+  "alerts": [],
+  "releaseDate": "2026-07-29T06:00",
+  "languages": [
+    "es",
+    "en"
+  ],
+  "formats": [
+    "2D"
+  ],
+  "tags": [],
+  "media": [
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "movie_card",
+      "sizes": {
+        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Movie_Card_900x900px/",
+        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Movie_Card_900x900px/",
+        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Movie_Card_900x900px/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "header_purchase_flow",
+      "sizes": {
+        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_flujo_de_compra_1440x502px_2/",
+        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_flujo_de_compra_1440x502px_2/",
+        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_flujo_de_compra_1440x502px_2/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "poster",
+      "sizes": {
+        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/P_ster_720x1022px_2/",
+        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/P_ster_107x160px_2/",
+        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/80x80px_10/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "header_movie_detail",
+      "sizes": {
+        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_Movie_details_1440x900px_2/",
+        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_Movie_details_1440x900px_2/",
+        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_Movie_details_1440x900px_2/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.mp4",
+      "type": "video",
+      "code": "trailer_mp4",
+      "sizes": {
+        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/6a57c7b29e43flanegociacion/",
+        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/6a57c7b29e43flanegociacion/",
+        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/6a57c7b29e43flanegociacion/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/07/",
+        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/07/",
+        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/07/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/06/",
+        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/06/",
+        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/06/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/05/",
+        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/05/",
+        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/05/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/04/",
+        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/04/",
+        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/04/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/01/",
+        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/01/",
+        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/01/",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    }
+  ],
+  "cities": [],
+  "cinemas": [],
+  "categories": [
+    "pre-sale",
+    "now-playing",
+    "coming-soon"
+  ],
+  "experiences": [
+    {
+      "icon": "",
+      "name": "Tradicional",
+      "__typename": "ResourceStatic"
+    }
+  ],
+  "__typename": "Movie"
+}

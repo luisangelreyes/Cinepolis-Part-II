@@ -1,14 +1,6 @@
 import { useEffect, useCallback, useState } from "react";
 import { usePelicula } from "../hooks/usePelicula";
 
-/* ── Datos de relleno para actores/director ──────────────────────── */
-const ACTORES_FALLBACK = [
-  { nombre: "Tom Holland", foto: "https://i.pravatar.cc/48?img=11" },
-  { nombre: "Anne Hathaway", foto: "https://i.pravatar.cc/48?img=47" },
-  { nombre: "Matthew Damon", foto: "https://i.pravatar.cc/48?img=32" },
-  { nombre: "Robert Pattinson", foto: "https://i.pravatar.cc/48?img=54" },
-];
-const DIRECTOR_FALLBACK = { nombre: "Christopher Nolan", foto: "https://i.pravatar.cc/48?img=3" };
 
 /* ── Helper: convierte URL de YouTube a embed ────────────────────── */
 function toEmbedUrl(url: string | null) {
@@ -196,36 +188,59 @@ export function SinopsisModal({ peliculaId, onClose }: Props) {
                 className="grid sm:grid-cols-2 gap-8 px-6 pb-8 pt-4"
                 style={{ borderTop: "1px solid #2a2a35" }}
               >
+                {/* Director */}
                 <div>
                   <p className="text-[10px] font-bold text-cine-gold uppercase tracking-wider mb-3">
                     Dirección
                   </p>
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={DIRECTOR_FALLBACK.foto}
-                      alt={DIRECTOR_FALLBACK.nombre}
-                      className="w-10 h-10 rounded-full object-cover border border-cine-line"
-                    />
-                    <span className="text-sm text-cine-cream">{DIRECTOR_FALLBACK.nombre}</span>
-                  </div>
+                  {pelicula.director ? (
+                    <div className="flex items-center gap-3">
+                      {/* Avatar generado a partir del nombre */}
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-cine-bg shrink-0"
+                        style={{ background: "linear-gradient(135deg, #c9a227, #e8c547)" }}
+                      >
+                        {pelicula.director.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                      </div>
+                      <span className="text-sm text-cine-cream">{pelicula.director}</span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-cine-slate italic">No disponible</p>
+                  )}
                 </div>
 
+                {/* Actores */}
                 <div>
                   <p className="text-[10px] font-bold text-cine-gold uppercase tracking-wider mb-3">
                     Actores
                   </p>
-                  <div className="space-y-2">
-                    {ACTORES_FALLBACK.map((a) => (
-                      <div key={a.nombre} className="flex items-center gap-3">
-                        <img
-                          src={a.foto}
-                          alt={a.nombre}
-                          className="w-8 h-8 rounded-full object-cover border border-cine-line"
-                        />
-                        <span className="text-sm text-cine-cream">{a.nombre}</span>
-                      </div>
-                    ))}
-                  </div>
+                  {pelicula.actores && pelicula.actores.length > 0 ? (
+                    <div className="space-y-2">
+                      {pelicula.actores.map((nombre, i) => (
+                        <div key={nombre} className="flex items-center gap-3">
+                          {/* Avatar con color único por índice */}
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                            style={{
+                              background: [
+                                "linear-gradient(135deg,#6366f1,#8b5cf6)",
+                                "linear-gradient(135deg,#0ea5e9,#38bdf8)",
+                                "linear-gradient(135deg,#10b981,#34d399)",
+                                "linear-gradient(135deg,#f59e0b,#fbbf24)",
+                                "linear-gradient(135deg,#ec4899,#f472b6)",
+                                "linear-gradient(135deg,#ef4444,#f87171)",
+                              ][i % 6],
+                            }}
+                          >
+                            {nombre.split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                          </div>
+                          <span className="text-sm text-cine-cream">{nombre}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-cine-slate italic">No disponible</p>
+                  )}
                 </div>
               </div>
             </>

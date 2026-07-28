@@ -1,13 +1,12 @@
 """
 =============================================================================
-EXTRACTOR MATILDE — v5.1 (WORKER BROWSER 100% REAL)
+EXTRACTOR MATILDE — v6.0 (HÍBRIDO PLAYWRIGHT + CURL_CFFI)
 =============================================================================
 Mecanismos de Defensa:
-  1. 100% Playwright VISIBLE: Evita bloqueos de Cloudflare y CAPTCHAs.
-  2. Single-Pass: Solo visita 19 URLs maestras interceptando GraphQL en red.
-  3. Night Owl Patch: Navega a la fecha de mañana si son más de las 10 PM.
-  4. Null-Safe: Protegido contra atributos vacíos de la API de Cinépolis.
-  5. DDL Dinámico: Elimina restricciones rígidas de vista_id.
+  1. Fase 1: Playwright VISIBLE descubre películas y salta Cloudflare de la web.
+  2. Fase 2: curl_cffi (API Directa) consulta ultrarrápido los horarios detallados
+     sin depender del DOM ni timeouts de red orgánicos.
+  3. DDL Dinámico: Elimina restricciones rígidas de vista_id.
 =============================================================================
 """
 
@@ -19,6 +18,12 @@ try:
     from playwright.sync_api import sync_playwright
 except ImportError:
     print("Faltan dependencias. Ejecuta: pip install playwright && playwright install chromium")
+    exit(1)
+    
+try:
+    from curl_cffi import requests as cffi_requests
+except ImportError:
+    print("Faltan dependencias. Ejecuta: pip install curl_cffi")
     exit(1)
 
 COMPLEJOS = [
@@ -43,30 +48,57 @@ COMPLEJOS = [
     {"nombre": "El Dorado Veracruz",       "slug": "cinepolis-el-dorado-veracruz"}
 ]
 
-# CORRECCIÓN: Dominio base para reconstruir URLs de media (poster/banner/trailer).
-# La API sólo devuelve rutas relativas tipo "/pimcore/19133/assets/.../carpeta/" +
-# un nombre de archivo fijo ("resource.jpg" / "resource.mp4"). Dominio confirmado
-# manualmente via Network tab (ejemplo real de poster):
-# https://tickets-static-content.cinepolis.com/pimcore/19133/assets/Mexico/Tickets/
-# Movies/MiniosYMonstruos/Es/9_P_ster_720x1022px__2/resource.jpg
 CDN_BASE_ASSETS = "https://tickets-static-content.cinepolis.com"
+API_URL = "https://api-g.cinepolis.com/v1/billboards/graphql"
+API_HEADERS = {
+    "accept": "*/*",
+    "content-type": "application/json",
+    "country-id": "MX",
+    "language": "ES",
+    "origin": "https://cinepolis.com",
+    "referer": "https://cinepolis.com/",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "x-apikey": "lQM6Mkvri1iHksKKCfpAiwGXq0YUZA7Nn6XAXRPr4i13LwXo"
+}
+GRAPHQL_QUERY = """
+query Billboard($countryId: String!, $movieId: String!, $cinemas: String!, $timezone: String) {
+  billboard(
+    countryId: $countryId
+    movieId: $movieId
+    cinemas: $cinemas
+    timezone: $timezone
+  ) {
+    schedules {
+      dates {
+        date
+        languages {
+          displayLanguage
+          showtimes {
+            sessionId
+            datetime
+            screen
+            format { name }
+            experience { name }
+            movieVistaId
+            cinemaVistaId
+          }
+        }
+      }
+    }
+  }
+}
+"""
 
 class MatildeExtractor:
     def __init__(self, modo_debug: bool = True):
         self.peliculas_cache = {}
+        self.pares_complejo_pelicula = [] # lista de (complejo_slug, movie_id, categoria)
         self.funciones = []
         self.modo_debug = modo_debug
         self._muestra_guardada = False
 
     def _buscar_en_media(self, media_list: list, codes: list, tipo: str = "image") -> dict:
-        """
-        Busca en el arreglo 'media' del nodo el primer elemento cuyo 'code' coincida
-        con alguno de los códigos candidatos (en orden de prioridad) y cuyo 'type'
-        sea el esperado ('image' o 'video'). Devuelve el item completo (no la URL)
-        para que _url_desde_media() construya la ruta final.
-        """
-        if not media_list:
-            return None
+        if not media_list: return None
         for code in codes:
             for item in media_list:
                 if isinstance(item, dict) and item.get("code") == code and item.get("type") == tipo:
@@ -74,25 +106,17 @@ class MatildeExtractor:
         return None
 
     def _url_desde_media(self, item: dict) -> str:
-        """
-        Construye la URL completa de un elemento de 'media'. La API de Cinépolis
-        (Pimcore) devuelve rutas relativas en sizes.large/medium/small (con "/" al
-        final) y un nombre de archivo fijo en 'resource' (p.ej. "resource.jpg" o
-        "resource.mp4"). La URL real = CDN_BASE_ASSETS + ruta + resource.
-        """
-        if not isinstance(item, dict):
-            return None
+        if not isinstance(item, dict): return None
         sizes = item.get("sizes") or {}
         ruta = sizes.get("large") or sizes.get("medium") or sizes.get("small")
         resource = item.get("resource")
-        if not ruta or not resource:
-            return None
+        if not ruta or not resource: return None
         base = ruta if ruta.startswith("http") else f"{CDN_BASE_ASSETS}{ruta}"
-        if not base.endswith("/"):
-            base += "/"
+        if not base.endswith("/"): base += "/"
         return f"{base}{resource}"
 
     def _procesar_json(self, body, slug):
+        """Fase 1: Extrae la metadata completa de películas y sus identificadores por cine"""
         data = body.get("data") or {}
         
         # 1. Extraer Películas Base
@@ -101,31 +125,19 @@ class MatildeExtractor:
             node = edge.get("node") or {}
             mid = node.get("id")
 
-            # CORRECCIÓN: modo debug — vuelca el primer nodo 'movie' completo tal cual
-            # llega de la API, para poder inspeccionar los nombres reales de los campos
-            # de imagen/trailer sin adivinar. Se guarda UNA sola vez por corrida.
             if self.modo_debug and not self._muestra_guardada and node:
                 with open("muestra_movie_node.json", "w", encoding="utf-8") as fdebug:
                     json.dump(node, fdebug, ensure_ascii=False, indent=2)
-                print("  [DEBUG] Nodo 'movie' completo volcado en muestra_movie_node.json "
-                      "— revisa ahí los nombres reales de campos de imagen/trailer.")
                 self._muestra_guardada = True
 
             if mid and mid not in self.peliculas_cache:
                 genero_crudo = node.get("genre", "")
-
-                # CORRECCIÓN: extracción real desde el array 'media' (confirmado con
-                # muestra_movie_node.json). Cada item trae code/type/resource/sizes.
-                # Prioridad: "poster" (poster real) > "movie_card" (tarjeta cuadrada)
-                # como fallback. Igual para banner y trailer.
                 media_list = node.get("media") or []
 
                 poster_item = self._buscar_en_media(media_list, ["poster", "movie_card"], tipo="image")
                 poster_url = self._url_desde_media(poster_item)
-
                 banner_item = self._buscar_en_media(media_list, ["header_movie_detail", "header_purchase_flow"], tipo="image")
                 banner_url = self._url_desde_media(banner_item)
-
                 trailer_item = self._buscar_en_media(media_list, ["trailer_mp4"], tipo="video")
                 trailer_url = self._url_desde_media(trailer_item)
 
@@ -136,7 +148,7 @@ class MatildeExtractor:
                     "genero": ", ".join(genero_crudo) if isinstance(genero_crudo, list) else str(genero_crudo),
                     "duracion_min": node.get("length", 120) or 120,
                     "sinopsis": node.get("synopsis", "") or "",
-                    "categoria": "Cartelera", # Se actualiza abajo si es Estreno/Preventa
+                    "categoria": "Cartelera", # Fallback
                     "vista_id": None,
                     "poster_url": poster_url,
                     "banner_url": banner_url,
@@ -145,9 +157,8 @@ class MatildeExtractor:
                     "actores": [],
                 }
 
-        # 2. Extraer Funciones y Horarios
+        # 2. Descubrir qué películas se proyectan en este cine
         billboard = data.get("billboardByCinema") or data.get("billboard") or {}
-        
         for sched in billboard.get("schedules") or []:
             mid = sched.get("movieId")
             if not mid: continue
@@ -156,104 +167,69 @@ class MatildeExtractor:
             cat_map = {"Estreno": "Estreno", "Preventa": "Preventa", "Próximamente": "Proximamente", "+Que Cine": "+Que Cine", "Sala de Arte": "Sala de Arte", "Garantía Cinépolis": "Garantia Cinepolis"}
             categoria_limpia = cat_map.get(cat_raw, "Cartelera")
             
-            # Actualizamos la categoría de la película si la encontramos
             if mid in self.peliculas_cache:
                 self.peliculas_cache[mid]["categoria"] = categoria_limpia
 
-            # Recorrer el árbol de horarios (Null-Safe)
-            for day in sched.get("dates") or []:
-                for lang in day.get("languages") or []:
-                    for show in lang.get("showtimes") or []:
-                        sala_raw = show.get("screen", "")
-                        num_sala = ''.join(filter(str.isdigit, str(sala_raw))) or "1"
-                        
-                        if not getattr(self, "_lang_muestra", False):
-                            with open("lang_muestra.json", "w", encoding="utf-8") as f:
-                                json.dump(lang, f, ensure_ascii=False, indent=2)
-                            self._lang_muestra = True
+            par = (slug, mid, categoria_limpia)
+            if par not in self.pares_complejo_pelicula:
+                self.pares_complejo_pelicula.append(par)
 
-                        movie_vista_id = show.get("movieVistaId")
-                        if movie_vista_id and mid in self.peliculas_cache and not self.peliculas_cache[mid]["vista_id"]:
-                            self.peliculas_cache[mid]["vista_id"] = movie_vista_id
-
-                        # PROTECCIÓN CONTRA NULOS (NULL) DE LA API
-                        formato_data = show.get("format") or {}
-                        experiencia_data = show.get("experience") or {}
-
-                        self.funciones.append({
-                            "complejo_slug": slug,
-                            "cinema_vista_id": show.get("cinemaVistaId", ""),
-                            "session_id": show.get("sessionId", ""),
-                            "datetime": show.get("datetime", ""),
-                            "numero_sala": num_sala,
-                            "formato": formato_data.get("name", "2D"),
-                            "idioma": lang.get("displayLanguage", "Español"),
-                            "experiencia": experiencia_data.get("name", "Tradicional"),
-                            "movie_id": mid,
-                        })
-
-    def _extraer_elenco_html(self, page) -> tuple:
-        """
-        Visita la página de detalle de la película (ya cargada en `page`) y
-        extrae director y actores del HTML de Cinépolis.
-        Devuelve (director: str | None, actores: list[str]).
-        """
-        director = None
-        actores = []
+    def _consultar_api_horarios(self, complejo_slug, movie_id):
+        """Fase 2: Usa curl_cffi para descargar horarios de forma instantánea"""
+        payload = {
+            "operationName": "Billboard",
+            "variables": {
+                "movieId": movie_id,
+                "cinemas": complejo_slug,
+                "countryId": "MX",
+                "timezone": "America/Mexico_City",
+            },
+            "query": GRAPHQL_QUERY,
+        }
         try:
-            # Esperar a que cargue el contenido dinámico
-            page.wait_for_selector("[class*='movie-detail'], [class*='cast'], [class*='crew'], main", timeout=8000)
-        except:
-            pass
-        try:
-            html = page.content()
-            import re
+            response = cffi_requests.post(API_URL, json=payload, headers=API_HEADERS, impersonate="chrome110", timeout=15)
+            if response.status_code != 200:
+                print(f"      ❌ HTTP {response.status_code}")
+                return
+            
+            data = response.json().get("data", {})
+            schedules = data.get("billboard", {}).get("schedules", [])
+            for schedule in schedules:
+                for day in schedule.get("dates", []):
+                    for lang in day.get("languages", []):
+                        idioma_display = lang.get("displayLanguage", "Español")
+                        for show in lang.get("showtimes", []):
+                            formato_data = show.get("format") or {}
+                            exp_data = show.get("experience") or {}
+                            sala_raw = show.get("screen", "")
+                            num_sala = ''.join(filter(str.isdigit, str(sala_raw))) or "1"
+                            
+                            movie_vista_id = show.get("movieVistaId")
+                            if movie_vista_id and movie_id in self.peliculas_cache and not self.peliculas_cache[movie_id]["vista_id"]:
+                                self.peliculas_cache[movie_id]["vista_id"] = movie_vista_id
 
-            # ── Estrategia 1: buscar texto "Dirección" / "Director" seguido del nombre ──
-            dir_match = re.search(
-                r'(?i)(?:direcci[oó]n|director)\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ][A-Za-záéíóúñÁÉÍÓÚÑ\s\.]+?)(?:\s*<|\n|\||,)',
-                html
-            )
-            if dir_match:
-                director = dir_match.group(1).strip()
-
-            # ── Estrategia 2: tag data-testid o class que contenga 'director' ──
-            if not director:
-                try:
-                    el = page.query_selector('[data-testid*="director"], [class*="director"]')
-                    if el:
-                        director = el.inner_text().strip()[:80]
-                except:
-                    pass
-
-            # ── Actores: buscar sección 'Actores' / 'Cast' / 'Reparto' ──
-            cast_match = re.search(
-                r'(?i)(?:actores|reparto|cast)\s*[:\-]?\s*([A-ZÁÉÍÓÚÑ][A-Za-záéíóúñÁÉÍÓÚÑ,\s\.]+?)(?:<\/|\n\n|\|)',
-                html
-            )
-            if cast_match:
-                actores_raw = cast_match.group(1).strip()
-                actores = [a.strip() for a in re.split(r'[,|\n]', actores_raw) if a.strip() and len(a.strip()) > 3][:6]
-
-            # ── Estrategia 2 actores: elementos con class 'actor' / 'cast' ──
-            if not actores:
-                try:
-                    els = page.query_selector_all('[class*="actor"], [class*="cast-member"], [data-testid*="actor"]')
-                    actores = [e.inner_text().strip() for e in els[:6] if e.inner_text().strip()]
-                except:
-                    pass
-
+                            self.funciones.append({
+                                "complejo_slug": complejo_slug,
+                                "cinema_vista_id": show.get("cinemaVistaId", ""),
+                                "session_id": show.get("sessionId", ""),
+                                "datetime": show.get("datetime", ""),
+                                "numero_sala": num_sala,
+                                "formato": formato_data.get("name", "2D"),
+                                "idioma": idioma_display,
+                                "experiencia": exp_data.get("name", "Tradicional"),
+                                "movie_id": movie_id,
+                            })
         except Exception as e:
-            pass
-        return director, actores
+            print(f"      ❌ Error de red: {e}")
 
     def ejecutar(self):
         print("═" * 60)
-        print("  WORKER PLAYWRIGHT V5.1 (MODO VISIBLE)")
+        print("  WORKER HÍBRIDO V6.0 (PLAYWRIGHT + CURL_CFFI)")
         print("═" * 60)
         
+        # ── FASE 1: DESCUBRIMIENTO CON PLAYWRIGHT ──
+        print("\n[FASE 1] Mapeando películas por complejo (Playwright)...")
         with sync_playwright() as p:
-            # FIX: headless=False engaña a Cloudflare haciéndole creer que somos humanos
             browser = p.chromium.launch(headless=False, args=["--disable-blink-features=AutomationControlled"])
             ctx = browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
@@ -261,26 +237,20 @@ class MatildeExtractor:
             )
             page = ctx.new_page()
             
-            # Navegar primero al home para obtener cookies limpias
-            print("  [INIT] Estableciendo sesión limpia...")
             page.goto("https://cinepolis.com", wait_until="domcontentloaded")
             time.sleep(2)
             
             for i, complejo in enumerate(COMPLEJOS, 1):
                 respuestas_cine = []
-                
                 def on_resp(r):
                     if "billboards/graphql" in r.url:
                         try:
                             if r.request.method != "OPTIONS":
                                 body = r.json()
                                 respuestas_cine.append(body)
-                        except Exception as e:
-                            pass
+                        except: pass
                 
                 page.on("response", on_resp)
-                
-                # Parche "Night Owl" (Previene pantallas en blanco después de las 10PM)
                 ahora = datetime.now()
                 if ahora.hour >= 22:
                     manana = ahora + timedelta(days=1)
@@ -288,54 +258,32 @@ class MatildeExtractor:
                 else:
                     url_objetivo = f"https://cinepolis.com/mx?cinema={complejo['slug']}"
 
-                print(f"  [{i:>2}/19] Extrayendo {complejo['nombre']}...")
+                print(f"  [{i:>2}/{len(COMPLEJOS)}] {complejo['nombre']}...")
+                try: page.evaluate("window.localStorage.clear(); window.sessionStorage.clear();")
+                except: pass
+                
                 try:
-                    # LIMPIAR ESTADO DEL SPA PARA EVITAR MULTIPLES PETICIONES DEL CINE ANTERIOR
-                    page.evaluate("window.localStorage.clear(); window.sessionStorage.clear();")
-                except:
-                    pass
-                try:
-                    page.goto(url_objetivo, wait_until="networkidle", timeout=30000)
-                    time.sleep(3) # Pausa humana para asegurar carga
+                    page.goto(url_objetivo, wait_until="networkidle", timeout=25000)
+                    time.sleep(2)
                 except Exception as e:
-                    print(f"    ⚠️ Timeout ignorado, procesando datos capturados...")
+                    print(f"    ⚠️ Timeout ignorado, usando lo capturado.")
                 
                 page.remove_listener("response", on_resp)
-                
-                # PROCESAR TODAS LAS RESPUESTAS CAPTURADAS EN ESTA CARGA
                 for body in respuestas_cine:
                     self._procesar_json(body, complejo["slug"])
                 
-                # Pausa humana antes del siguiente cine
-                time.sleep(2.5)
-
-            # ── FASE 2: Scrapear detalles (director y actores) de cada película ──
-            print("\n  [FASE 2] Extrayendo director y actores de cada película...")
-            peliculas_sin_detalle = [
-                (mid, p) for mid, p in self.peliculas_cache.items()
-                if p.get("director") is None
-            ]
-            total_peli = len(peliculas_sin_detalle)
-            for idx, (mid, p) in enumerate(peliculas_sin_detalle, 1):
-                slug_peli = mid  # el id es el slug, ej: "la-odisea"
-                url_detalle = f"https://cinepolis.com/mx/pelicula/{slug_peli}"
-                print(f"    [{idx:>2}/{total_peli}] {p['nombre']}...")
-                try:
-                    page.evaluate("window.localStorage.clear(); window.sessionStorage.clear();")
-                    page.goto(url_detalle, wait_until="domcontentloaded", timeout=20000)
-                    time.sleep(3)
-                    director, actores = self._extraer_elenco_html(page)
-                    self.peliculas_cache[mid]["director"] = director
-                    self.peliculas_cache[mid]["actores"]  = actores
-                    if director or actores:
-                        print(f"      ✅ Dir: {director}  |  Actores: {', '.join(actores[:3])}")
-                    else:
-                        print(f"      ⚠️  No se encontró elenco en la página")
-                except Exception as e:
-                    print(f"      ❌ Error: {e}")
-                time.sleep(1.5)
-
+                time.sleep(1)
             browser.close()
+
+        # ── FASE 2: DESCARGA PROFUNDA CON API DIRECTA ──
+        print(f"\n[FASE 2] Descargando horarios detallados para {len(self.pares_complejo_pelicula)} pares...")
+        total_pares = len(self.pares_complejo_pelicula)
+        for i, par in enumerate(self.pares_complejo_pelicula, 1):
+            complejo_slug, movie_id, categoria = par
+            nombre_peli = self.peliculas_cache.get(movie_id, {}).get("nombre", movie_id)
+            print(f"  [{i:>3}/{total_pares}] {complejo_slug} -> {nombre_peli}")
+            self._consultar_api_horarios(complejo_slug, movie_id)
+            time.sleep(0.1) # Pequeña pausa para no saturar
 
 class ExportadorVisionWorker:
     def __init__(self, peliculas_cache, funciones):
@@ -346,7 +294,7 @@ class ExportadorVisionWorker:
         ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         lines = [
             "-- ============================================================",
-            f"-- WORKER MATILDE v5.1 (BROWSER PURO) — {ts}",
+            f"-- WORKER MATILDE v6.0 (HÍBRIDO) — {ts}",
             "-- ============================================================\n",
             "BEGIN;\n"
         ]
@@ -369,7 +317,6 @@ class ExportadorVisionWorker:
             dur = ''.join(filter(str.isdigit, dur_str)) or "120"
             cat = p.get("categoria", "Cartelera")
 
-            # CORRECCIÓN: poster_url / banner_url / trailer_url — NULL si no se encontró candidato válido
             def _sql_val(v):
                 if not v: return "NULL"
                 return "'" + str(v).replace("'", "''") + "'"
@@ -377,7 +324,6 @@ class ExportadorVisionWorker:
             poster_sql = _sql_val(p.get("poster_url"))
             banner_sql = _sql_val(p.get("banner_url"))
             trailer_sql = _sql_val(p.get("trailer_url"))
-
             sinopsis_raw = p.get("sinopsis", "") or ""
             sinopsis_sql = _sql_val(sinopsis_raw) if sinopsis_raw else "NULL"
 
@@ -390,35 +336,6 @@ class ExportadorVisionWorker:
                 f"banner_url = COALESCE(EXCLUDED.banner_url, PELICULA.banner_url), "
                 f"trailer_url = COALESCE(EXCLUDED.trailer_url, PELICULA.trailer_url);"
             )
-
-            # Insertar Director (si se scrapeó)
-            director = p.get("director")
-            if director:
-                dir_sql = director.replace("'", "''")
-                lines.append(
-                    f"INSERT INTO PERSONA (nombre) VALUES ('{dir_sql}') ON CONFLICT (nombre) DO NOTHING;"
-                )
-                lines.append(
-                    f"INSERT INTO PELICULA_PERSONA (pelicula_id, persona_id, rol) "
-                    f"SELECT p.pelicula_id, per.persona_id, 'Director' "
-                    f"FROM PELICULA p, PERSONA per "
-                    f"WHERE p.slug = '{mid}' AND per.nombre = '{dir_sql}' "
-                    f"ON CONFLICT DO NOTHING;"
-                )
-
-            # Insertar Actores (si se scrapearon)
-            for actor in p.get("actores", []):
-                act_sql = actor.replace("'", "''")
-                lines.append(
-                    f"INSERT INTO PERSONA (nombre) VALUES ('{act_sql}') ON CONFLICT (nombre) DO NOTHING;"
-                )
-                lines.append(
-                    f"INSERT INTO PELICULA_PERSONA (pelicula_id, persona_id, rol) "
-                    f"SELECT p.pelicula_id, per.persona_id, 'Actor' "
-                    f"FROM PELICULA p, PERSONA per "
-                    f"WHERE p.slug = '{mid}' AND per.nombre = '{act_sql}' "
-                    f"ON CONFLICT DO NOTHING;"
-                )
 
         lines.append("\n-- ── 2. SALAS Y FORMATOS (DO NOTHING) ───────────────────────")
         salas_vistas = set()
@@ -456,12 +373,9 @@ class ExportadorVisionWorker:
             except: continue
 
             idioma_raw = str(f["idioma"]).upper()
-            if "SUB" in idioma_raw:
-                idioma_val = "Subtitulada"
-            elif "DOB" in idioma_raw:
-                idioma_val = "Doblada"
-            else:
-                idioma_val = "Español"
+            if "SUB" in idioma_raw: idioma_val = "Subtitulada"
+            elif "DOB" in idioma_raw: idioma_val = "Doblada"
+            else: idioma_val = "Español"
                 
             fmt = f["formato"] if f["formato"] in ['2D', '3D', 'IMAX 3D'] else '2D'
             
@@ -476,7 +390,7 @@ class ExportadorVisionWorker:
             )
 
         lines.append("\n-- ── 4. RECOLECTOR DE BASURA (FAIL-SAFE) ──────────────────")
-        if len(self.funciones) < 50:
+        if len(self.funciones) < 500:
             lines.append("-- ❌ [FAIL-SAFE ACTIVADO]: Se extrajeron muy pocas funciones.")
             lines.append("-- El Soft-Delete ha sido abortado para proteger la cartelera actual en BD.")
         else:
@@ -502,10 +416,6 @@ AND NOT EXISTS (
         print(f"  [SQL WORKER] {ruta} guardado exitosamente.")
 
     def guardar_json(self, ruta="cartelera_veracruz_completa.json"):
-        """
-        Restaura el export a JSON (formato consumido por F.R.I.D.A.Y. V3 para
-        extraer precios vía session_id). Se regenera SIEMPRE junto al SQL.
-        """
         payload = {
             "generado": datetime.now().isoformat(),
             "peliculas": list(self.peliculas_cache.values()),
@@ -516,9 +426,7 @@ AND NOT EXISTS (
         print(f"  [JSON] {ruta} guardado exitosamente ({len(self.funciones)} funciones).")
 
     def guardar_csv(self, ruta_peliculas="peliculas.csv", ruta_funciones="funciones.csv"):
-        """Restaura el export a CSV — útil para inspección rápida en Excel/Sheets."""
         import csv as _csv
-
         if self.peliculas_cache:
             campos_p = list(next(iter(self.peliculas_cache.values())).keys())
             with open(ruta_peliculas, "w", newline="", encoding="utf-8") as f:
@@ -537,7 +445,7 @@ AND NOT EXISTS (
 
 def main():
     print("\n" + "═" * 60)
-    print("  EXTRACTOR WORKER MATILDE v5.1 (MODO PRODUCCIÓN VISIBLE)")
+    print("  EXTRACTOR WORKER MATILDE v6.0 (HÍBRIDO)")
     print("═" * 60 + "\n")
 
     extractor = MatildeExtractor()
@@ -546,12 +454,11 @@ def main():
     if extractor.funciones:
         exportador = ExportadorVisionWorker(extractor.peliculas_cache, extractor.funciones)
         exportador.guardar_sql()
-        exportador.guardar_json()   # CORRECCIÓN: JSON restaurado — lo necesita F.R.I.D.A.Y. V3
-        exportador.guardar_csv()    # CORRECCIÓN: CSV restaurado — para inspección rápida
+        exportador.guardar_json()
+        exportador.guardar_csv()
         print(f"\n✅ Extracción exitosa. {len(extractor.funciones)} funciones encontradas.")
         if extractor.modo_debug:
-            print("ℹ️  Revisa 'muestra_movie_node.json' para confirmar los nombres reales de "
-                  "los campos de imagen/trailer y ajustar los candidatos en _extraer_imagen si hace falta.")
+            print("ℹ️  Revisa 'muestra_movie_node.json' para confirmar los nombres reales de campos.")
     else:
         print("\n⚠️ Falló la extracción. Cinépolis no devolvió horarios.")
 
