@@ -1,5 +1,10 @@
+import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
-engine = create_engine('postgresql://postgres:1234@localhost:5432/secret_wars')
+
+load_dotenv()
+engine = create_engine(os.getenv("DATABASE_URL"))
+
 with engine.connect() as conn:
     res = conn.execute(text("""
         SELECT f.hora_inicio, p.titulo, s.numero_sala, fs.nombre_formato, f.activa, f.idioma
