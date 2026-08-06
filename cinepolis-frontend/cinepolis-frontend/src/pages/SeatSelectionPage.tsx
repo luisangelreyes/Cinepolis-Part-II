@@ -34,9 +34,8 @@ interface ModalBoletosProps {
 
 function ModalBoletos({ tarifas, totalAsientos, onConfirmar, onCerrar }: ModalBoletosProps) {
   const [cantidades, setCantidades] = useState<Record<number, number>>(() => {
-    // Default: assign all seats to first tarifa
     const init: Record<number, number> = {};
-    tarifas.forEach((t, i) => { init[t.tipo_boleto_id] = i === 0 ? totalAsientos : 0; });
+    tarifas.forEach(t => { init[t.tipo_boleto_id] = 0; });
     return init;
   });
 

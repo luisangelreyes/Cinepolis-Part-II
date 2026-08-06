@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from fastapi import HTTPException
-from datetime import date
+from datetime import date, datetime
 
 def get_pelicula(pelicula_id: int, db: Session):
     consulta = text("""
@@ -89,6 +89,28 @@ def get_asientos(funcion_id: int, db: Session):
     """), {"fid": funcion_id}).fetchone()
 
     if not info_funcion: raise HTTPException(status_code=404, detail="Función no encontrada.")
+
+    # Liberar asientos de carritos expirados antes de consultar el mapa
+    db.execute(text("""
+        UPDATE ASIENTO 
+        SET estado = 'disponible' 
+        WHERE funcion_id = :fid 
+          AND estado = 'reservado'
+          AND asiento_id IN (
+              SELECT dc.asiento_id 
+              FROM DETALLE_CARRITO dc 
+              JOIN CARRITO c ON dc.carrito_id = c.carrito_id 
+              WHERE c.estado = 'activo' AND c.fecha_expiracion < :now
+          )
+    """), {"fid": funcion_id, "now": datetime.now()})
+    
+    db.execute(text("""
+        UPDATE CARRITO 
+        SET estado = 'abandonado' 
+        WHERE estado = 'activo' AND fecha_expiracion < :now
+    """), {"now": datetime.now()})
+    
+    db.commit()
 
     asientos_raw = db.execute(text("""
         SELECT asiento_id, fila, columna, tipo_asiento, estado FROM ASIENTO WHERE funcion_id = :fid ORDER BY fila, columna

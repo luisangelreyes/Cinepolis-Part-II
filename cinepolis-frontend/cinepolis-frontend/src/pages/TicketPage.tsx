@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAsientosFuncion } from "../hooks/useFuncion";
 import { getDulceria } from "../api/endpoints";
 import { useMemo } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import type { AsientoAPI } from "../types/api";
 
 export function TicketPage() {
@@ -89,14 +90,8 @@ export function TicketPage() {
 
       {/* QR Box */}
       <div className="bg-white text-black rounded-3xl p-6 mb-8 w-64 shadow-lg flex flex-col items-center relative">
-        <div className="w-full aspect-square border-[10px] border-black p-2 flex flex-wrap gap-1 mb-4">
-            {/* Simulación de un QR real */}
-            {Array.from({ length: 100 }).map((_, i) => (
-            <div 
-                key={i} 
-                className={`w-[8%] h-[8%] ${Math.random() > 0.4 ? 'bg-black' : 'bg-white'}`} 
-            />
-            ))}
+        <div className="w-full aspect-square mb-4 flex items-center justify-center bg-white p-2 border-[10px] border-black">
+          <QRCodeSVG value={codeStr} className="w-full h-full" />
         </div>
         <p className="text-lg tracking-[0.2em] font-medium text-gray-700">
           {codeStr}
