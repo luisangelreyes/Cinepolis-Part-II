@@ -104,10 +104,10 @@ export function SinopsisModal({ peliculaId, onClose }: Props) {
                 {/* Póster */}
                 <div className="shrink-0 w-32 sm:w-44 rounded-xl overflow-hidden shadow-2xl border border-white/10 mx-auto sm:mx-0">
                   {pelicula.poster_url ? (
-                    <img
-                      src={pelicula.poster_url}
-                      alt={`Póster de ${pelicula.titulo}`}
-                      className="w-full h-auto object-cover"
+                    <img 
+                      src={pelicula.poster_url} 
+                      alt={pelicula.titulo} 
+                      className="w-full h-full object-cover" 
                     />
                   ) : (
                     <div className="aspect-[2/3] bg-cine-bg-raised flex items-center justify-center text-cine-slate text-xs">

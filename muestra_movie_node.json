@@ -1,19 +1,19 @@
 {
-  "id": "la-negociacion",
+  "id": "spider-man-un-nuevo-dia",
   "countryId": "MX",
-  "name": "La Negociación",
-  "originalName": "Dead Man’s Wire",
-  "distributor": "Canibal",
-  "rating": "TBC",
-  "ratingDescription": " ",
-  "position": "112",
+  "name": "Spider-Man: Un Nuevo Día",
+  "originalName": "Spider-Man: Brand New Day",
+  "distributor": "Sony",
+  "rating": "B",
+  "ratingDescription": "Para adolescentes de 12 años en adelante.\nLa narrativa puede ser compleja. Presenta cierto grado de violencia, no extrema, por motivos específicos y no vinculada con lo sexual, poniendo en claro sus consecuencias. Los desnudos son breves y no detallados y las escenas sexuales sólo sugeridas. Se puede tratar el tema de las adicciones y las drogas pero sin exhibir su consumo. La violencia verbal no puede ser extrema.",
+  "position": "1",
   "genre": [
-    "SUSPENSO",
-    "CRIMEN"
+    "AVENTURA",
+    "ACCIÓN"
   ],
-  "synopsis": "En 1977. Tras ser estafado por un banco, Tony Kiritsis se presenta en sus oficinas y toma como rehén al hijo del presidente de la compañía, atándole al cuello un dispositivo mortal conectado al gatillo de una escopeta. Exige que le devuelvan su dinero, además de una disculpa pública que será retransmitida por televisión y vista por millones en prime time. Esta es la historia real de un crimen que conmocionó a toda una nación.",
-  "length": "105 min",
-  "availableForSale": false,
+  "synopsis": "Comienza un nuevo día para Peter Parker. Luchar contra el crimen a tiempo completo como Spider-Man en un mundo que no lo recuerda, sumado a la presión de ver a sus viejos amigos seguir adelante sin él, provoca un cambio en Peter que quizás no pueda controlar. Pero esa transformación podría ser lo único que detenga una nueva y aterradora amenaza para la ciudad y sus seres queridos: un poderoso villano que ni siquiera pueden ver. El mundo puede haber olvidado a Peter Parker, pero él no los ha olvidado a ellos.",
+  "length": "145 min",
+  "availableForSale": true,
   "alerts": [],
   "releaseDate": "2026-07-29T06:00",
   "languages": [
@@ -30,9 +30,9 @@
       "type": "image",
       "code": "movie_card",
       "sizes": {
-        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Movie_Card_900x900px/",
-        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Movie_Card_900x900px/",
-        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Movie_Card_900x900px/",
+        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_900x900_3/",
+        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_900x900_3/",
+        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_900x900_3/",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -42,9 +42,9 @@
       "type": "image",
       "code": "header_purchase_flow",
       "sizes": {
-        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_flujo_de_compra_1440x502px_2/",
-        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_flujo_de_compra_1440x502px_2/",
-        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_flujo_de_compra_1440x502px_2/",
+        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x502_1/",
+        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x502_1/",
+        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x502_1/",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -54,9 +54,9 @@
       "type": "image",
       "code": "poster",
       "sizes": {
-        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/P_ster_720x1022px_2/",
-        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/P_ster_107x160px_2/",
-        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/80x80px_10/",
+        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_720x1022_2/",
+        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_107x160_5/",
+        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/80x80_53/",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -66,9 +66,9 @@
       "type": "image",
       "code": "header_movie_detail",
       "sizes": {
-        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_Movie_details_1440x900px_2/",
-        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_Movie_details_1440x900px_2/",
-        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/Header_Movie_details_1440x900px_2/",
+        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x900_5/",
+        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x900_5/",
+        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x900_5/",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -78,9 +78,9 @@
       "type": "video",
       "code": "trailer_mp4",
       "sizes": {
-        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/6a57c7b29e43flanegociacion/",
-        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/6a57c7b29e43flanegociacion/",
-        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/6a57c7b29e43flanegociacion/",
+        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/6a19e4cd4cc01spidermanbrandnewday/",
+        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/6a19e4cd4cc01spidermanbrandnewday/",
+        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/6a19e4cd4cc01spidermanbrandnewday/",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -90,9 +90,9 @@
       "type": "image",
       "code": "carousel",
       "sizes": {
-        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/07/",
-        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/07/",
-        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/07/",
+        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_1/",
+        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_1/",
+        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_1/",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -102,45 +102,9 @@
       "type": "image",
       "code": "carousel",
       "sizes": {
-        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/06/",
-        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/06/",
-        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/06/",
-        "__typename": "SizeInfo"
-      },
-      "__typename": "MediaInfo"
-    },
-    {
-      "resource": "resource.jpg",
-      "type": "image",
-      "code": "carousel",
-      "sizes": {
-        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/05/",
-        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/05/",
-        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/05/",
-        "__typename": "SizeInfo"
-      },
-      "__typename": "MediaInfo"
-    },
-    {
-      "resource": "resource.jpg",
-      "type": "image",
-      "code": "carousel",
-      "sizes": {
-        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/04/",
-        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/04/",
-        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/04/",
-        "__typename": "SizeInfo"
-      },
-      "__typename": "MediaInfo"
-    },
-    {
-      "resource": "resource.jpg",
-      "type": "image",
-      "code": "carousel",
-      "sizes": {
-        "large": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/01/",
-        "medium": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/01/",
-        "small": "/pimcore/20537/assets/Mexico/Tickets/Movies/LaNegociacion/Es/01/",
+        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_2/",
+        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_2/",
+        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_2/",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -149,14 +113,32 @@
   "cities": [],
   "cinemas": [],
   "categories": [
-    "pre-sale",
-    "now-playing",
-    "coming-soon"
+    "now-playing"
   ],
   "experiences": [
     {
       "icon": "",
       "name": "Tradicional",
+      "__typename": "ResourceStatic"
+    },
+    {
+      "icon": "/resources/mx/icons/experiences/4DX.svg",
+      "name": "4DX",
+      "__typename": "ResourceStatic"
+    },
+    {
+      "icon": "/resources/mx/icons/experiences/XE.svg",
+      "name": "XE",
+      "__typename": "ResourceStatic"
+    },
+    {
+      "icon": "/resources/mx/icons/experiences/PLUUS.svg",
+      "name": "SP",
+      "__typename": "ResourceStatic"
+    },
+    {
+      "icon": "/resources/mx/icons/experiences/3D.svg",
+      "name": "3D",
       "__typename": "ResourceStatic"
     }
   ],

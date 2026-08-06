@@ -126,7 +126,7 @@ export function SeatMap({ mapa, seleccionados, onToggle }: Props) {
         {/* Asientos */}
         {posiciones.map((a) => {
           const estaSeleccionado = seleccionados.has(a.asiento_id);
-          const clickeable = a.estado === "disponible";
+          const clickeable = a.estado === "disponible" || estaSeleccionado;
           const color = estaSeleccionado ? "var(--color-cine-gold)" : COLOR_POR_ESTADO[a.estado];
 
           return (

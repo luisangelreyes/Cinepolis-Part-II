@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { PeliculaCartelera } from "../types/api";
 import { useNavigate } from "react-router-dom";
 import { SinopsisModal } from "./SinopsisModal";
+import { useAppStore } from "../store/useAppStore";
 
 interface Props {
   pelicula: PeliculaCartelera;
@@ -20,16 +21,27 @@ function agruparPorIdioma(pelicula: PeliculaCartelera) {
 function formatTime(timeStr: string) {
   const [h, m] = timeStr.split(":");
   let hour = parseInt(h, 10);
-  const ampm = hour >= 12 ? "p.m." : "a.m.";
-  hour = hour % 12;
-  if (hour === 0) hour = 12;
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
   return `${hour}:${m} ${ampm}`;
 }
 
-function getSpecialFormat(formato: string, tipo_sala: string) {
-  const tags = [];
-  if (formato && formato.toUpperCase().includes("3D")) tags.push("3D");
-  if (tipo_sala && tipo_sala.toUpperCase() !== "TRADICIONAL") tags.push(tipo_sala.toUpperCase());
+function getSpecialFormat(formato: string, tipoSala: string) {
+  const sala = tipoSala.toLowerCase();
+  const fmt = formato.toUpperCase();
+  const tags: string[] = [];
+
+  // Experience badges (from tipo_sala)
+  if (sala.includes("4dx")) tags.push("4DX");
+  else if (sala.includes("macro") && sala.includes("xe")) tags.push("MACRO XE");
+  else if (sala.includes("imax")) tags.push("IMAX");
+  else if (sala.includes("vip")) tags.push("VIP");
+  else if (sala.includes("junior")) tags.push("junior");
+
+  // Format badges (from formato)
+  if (fmt === "3D" || fmt === "IMAX 3D") tags.push(fmt);
+
+  if (tags.length === 0) return null;
   return tags.join(" ");
 }
 
@@ -37,6 +49,25 @@ export function PeliculaCard({ pelicula }: Props) {
   const navigate = useNavigate();
   const grupos = agruparPorIdioma(pelicula);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [funcionPendiente, setFuncionPendiente] = useState<number | null>(null);
+  const carritoId = useAppStore((s) => s.carritoId);
+  const carritoFuncionId = useAppStore((s) => s.carritoFuncionId);
+  const setCarritoId = useAppStore((s) => s.setCarritoId);
+
+  const handleFunctionClick = (funcionId: number) => {
+    if (carritoId && carritoFuncionId !== funcionId) {
+      setFuncionPendiente(funcionId);
+    } else {
+      navigate(`/funcion/${funcionId}/asientos`);
+    }
+  };
+
+  const confirmarCambio = () => {
+    setCarritoId(null);
+    if (funcionPendiente) {
+      navigate(`/funcion/${funcionPendiente}/asientos`);
+    }
+  };
 
   return (
     <>
@@ -96,15 +127,15 @@ export function PeliculaCard({ pelicula }: Props) {
                     return (
                       <button
                         key={f.funcion_id}
-                        onClick={() => navigate(`/funcion/${f.funcion_id}/asientos`)}
+                        onClick={() => handleFunctionClick(f.funcion_id)}
                         className="group flex flex-col items-center justify-center rounded-lg border border-cine-line bg-cine-bg-raised min-w-[100px] h-12 px-3 hover:border-cine-gold transition-colors"
                       >
-                        {tag ? (
-                          <span className="text-[8px] font-bold text-cine-slate uppercase tracking-wider leading-none mb-0.5">
+                        {tag && (
+                          <span className="text-[9px] font-bold text-cine-gold tracking-wider mb-0.5 opacity-80 group-hover:opacity-100 transition-opacity">
                             {tag}
                           </span>
-                        ) : null}
-                        <span className="font-display font-semibold text-sm text-cine-cream group-hover:text-cine-gold leading-none">
+                        )}
+                        <span className="text-sm font-mono text-cine-cream group-hover:text-cine-gold transition-colors">
                           {formatTime(f.hora_inicio)}
                         </span>
                       </button>
@@ -117,12 +148,38 @@ export function PeliculaCard({ pelicula }: Props) {
         </div>
       </article>
 
-      {/* Modal de sinopsis — montado fuera del article para evitar clipping */}
       {modalAbierto && (
         <SinopsisModal
           peliculaId={pelicula.pelicula_id}
           onClose={() => setModalAbierto(false)}
         />
+      )}
+
+      {funcionPendiente && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-8 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+            <h2 className="text-[#002f6c] text-2xl font-bold text-center mb-4">
+              ¿Estás seguro que deseas cambiar tu película?
+            </h2>
+            <p className="text-gray-500 text-center mb-8 text-sm">
+              Al cambiar tu película, todos los productos en tu carrito se perderán automáticamente.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={confirmarCambio}
+                className="w-full bg-[#4887ff] hover:bg-[#356edb] text-white font-semibold py-3.5 rounded-xl transition-colors text-sm"
+              >
+                Aceptar
+              </button>
+              <button
+                onClick={() => setFuncionPendiente(null)}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-[#002f6c] font-semibold py-3.5 rounded-xl transition-colors text-sm"
+              >
+                Continuar compra
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

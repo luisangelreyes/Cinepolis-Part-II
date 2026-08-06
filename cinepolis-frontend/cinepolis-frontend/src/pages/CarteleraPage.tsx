@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SelectorFecha, toISODate } from "../components/SelectorFecha";
 import { PeliculaCard } from "../components/PeliculaCard";
-import { useCartelera } from "../hooks/useCartelera";
+import { useCartelera, useFechasCartelera } from "../hooks/useCartelera";
 import { useAppStore } from "../store/useAppStore";
  
 // Los 19 slugs confirmados en Vision (complejo_id 1-19). Si tu base
@@ -33,8 +33,32 @@ export function CarteleraPage() {
   const [fecha, setFecha] = useState(toISODate(new Date()));
   const complejoSlug = useAppStore((s) => s.complejoSlug);
   const setComplejoSlug = useAppStore((s) => s.setComplejoSlug);
+  const { data: fechas, isLoading: isFechasLoading } = useFechasCartelera(complejoSlug);
+  
+  // If we get a new list of dates and the current selected date is not in it, select the first available date.
+  // We use useEffect to sync the state when `fechas` changes.
+  useEffect(() => {
+    if (fechas && fechas.length > 0 && !fechas.includes(fecha)) {
+      setFecha(fechas[0]);
+    }
+  }, [fechas, fecha]);
+
   const { data, isLoading, isError, error } = useCartelera(complejoSlug, fecha);
  
+  // Filtrar las películas y funciones basándonos en la hora actual
+  const now = new Date();
+  const [y, m, d] = fecha.split("-").map(Number);
+  
+  const peliculasActivas = data?.peliculas.map(p => {
+    const funcionesActivas = p.funciones.filter((f) => {
+      const [h, min] = f.hora_inicio.split(":").map(Number);
+      const functionTime = new Date(y, m - 1, d, h, min);
+      const hideTime = new Date(functionTime.getTime() + 15 * 60000);
+      return hideTime >= now;
+    });
+    return { ...p, funciones: funcionesActivas };
+  }).filter(p => p.funciones.length > 0) || [];
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <header className="mb-6">
@@ -58,7 +82,15 @@ export function CarteleraPage() {
         </select>
       </header>
  
-      <SelectorFecha fechaSeleccionada={fecha} onSelect={setFecha} />
+      {fechas && fechas.length > 0 ? (
+        <SelectorFecha 
+          fechaSeleccionada={fecha} 
+          fechasDisponibles={fechas} 
+          onSelect={setFecha} 
+        />
+      ) : (
+        isFechasLoading && <div className="h-14 animate-pulse bg-cine-bg-raised rounded-lg border border-cine-line"></div>
+      )}
  
       <div className="mt-6 space-y-4">
         {isLoading && (
@@ -74,7 +106,7 @@ export function CarteleraPage() {
           </div>
         )}
  
-        {data && data.peliculas.length === 0 && (
+        {data && !isLoading && peliculasActivas.length === 0 && (
           <div className="border border-dashed border-cine-line rounded-lg p-8 text-center">
             <p className="text-cine-cream-dim">
               No hay funciones programadas para esta fecha en este complejo.
@@ -82,11 +114,10 @@ export function CarteleraPage() {
           </div>
         )}
  
-        {data?.peliculas.map((p) => (
+        {peliculasActivas.map((p) => (
           <PeliculaCard key={p.pelicula_id} pelicula={p} />
         ))}
       </div>
     </div>
   );
-}
- 
+} 

@@ -4,6 +4,17 @@ from fastapi import HTTPException
 from datetime import datetime, timedelta
 from schemas.models import CrearCarritoRequest, AgregarAsientoRequest, AgregarProductoRequest, PagarCarritoRequest
 
+def extend_cart(carrito_id: int, db: Session):
+    try:
+        carrito = _validar_carrito_activo(db, carrito_id)
+        nueva_expiracion = datetime.now() + timedelta(minutes=5)
+        db.execute(text("UPDATE CARRITO SET fecha_expiracion = :fe WHERE carrito_id = :cid"), {"fe": nueva_expiracion, "cid": carrito_id})
+        db.commit()
+        return {"carrito_id": carrito_id, "fecha_expiracion": nueva_expiracion}
+    except Exception as e:
+        db.rollback()
+        raise e
+
 def _validar_carrito_activo(db: Session, carrito_id: int):
     carrito = db.execute(text("SELECT carrito_id, estado, fecha_expiracion, socio_id, sesion_id FROM CARRITO WHERE carrito_id = :cid FOR UPDATE"), {"cid": carrito_id}).fetchone()
     if not carrito: raise HTTPException(status_code=404, detail="Carrito no encontrado.")

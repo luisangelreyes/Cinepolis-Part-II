@@ -1,9 +1,15 @@
 import json
 
-try:
-    with open('cartelera_veracruz_completa.json', encoding='utf-8') as f:
-        data = json.load(f)
-        print(f"Peliculas guardadas: {len(data['peliculas'])}")
-        print(f"Funciones guardadas: {len(data['funciones'])}")
-except Exception as e:
-    print(f"Error reading JSON: {e}")
+with open('cartelera_veracruz_completa.json', 'r', encoding='utf-8') as f:
+    d = json.load(f)
+    print("Primer película en cartelera:")
+    # It's usually d[0]['cartelera'][0] ... let's just search for the first poster_url
+    for complejo in d:
+        if 'cartelera' in complejo:
+            for c in complejo['cartelera']:
+                if 'cartelera' in c:
+                    for p in c['cartelera']:
+                        print(p.get('titulo'), p.get('poster_url'))
+                        break
+                break
+        break

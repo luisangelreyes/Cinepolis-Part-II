@@ -1,59 +1,76 @@
 interface Props {
   fechaSeleccionada: string;
+  fechasDisponibles: string[];
   onSelect: (fecha: string) => void;
 }
 
-const DIAS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const MESES = [
-  "ene", "feb", "mar", "abr", "may", "jun",
-  "jul", "ago", "sep", "oct", "nov", "dic",
+  "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+  "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
 ];
 
-function generarProximosDias(cantidad: number) {
-  const hoy = new Date();
-  return Array.from({ length: cantidad }, (_, i) => {
-    const d = new Date(hoy);
-    d.setDate(hoy.getDate() + i);
-    return d;
-  });
-}
-
 function toISODate(d: Date) {
-  // Usamos componentes locales, NO toISOString() (que convierte a UTC
-  // y en Veracruz/UTC-6 puede adelantar la fecha un día por la tarde/noche).
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
-export function SelectorFecha({ fechaSeleccionada, onSelect }: Props) {
-  const dias = generarProximosDias(7);
+function parseDate(iso: string) {
+  // ISO is YYYY-MM-DD
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export function SelectorFecha({ fechaSeleccionada, fechasDisponibles, onSelect }: Props) {
+  const hoyStr = toISODate(new Date());
+  const hoyDate = parseDate(hoyStr);
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-      {dias.map((d, i) => {
-        const iso = toISODate(d);
+    <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
+      {fechasDisponibles.map((iso) => {
+        const d = parseDate(iso);
         const activo = iso === fechaSeleccionada;
+        
+        // Calculate difference in days safely
+        const diffTime = d.getTime() - hoyDate.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        let headerText = "";
+        if (diffDays === 0) headerText = "Hoy";
+        else if (diffDays === 1) headerText = "Mañana";
+        else if (diffDays > 1 && diffDays < 7) headerText = DIAS[d.getDay()];
+
+        const isShort = headerText === "";
+        const dayStr = String(d.getDate());
+        const monthStr = MESES[d.getMonth()];
+        const bottomText = `${dayStr} ${monthStr}`;
+
         return (
           <button
             key={iso}
             onClick={() => onSelect(iso)}
-            className={`flex flex-col items-center justify-center min-w-[64px] rounded-lg border px-3 py-2 transition-colors ${
+            className={`flex flex-col items-center justify-center min-w-[80px] sm:min-w-[100px] h-14 rounded-lg border px-3 transition-colors snap-start shrink-0 ${
               activo
-                ? "bg-cine-gold border-cine-gold text-cine-bg"
+                ? "bg-cine-gold border-cine-gold text-cine-bg shadow-sm"
                 : "bg-cine-bg-raised border-cine-line text-cine-cream-dim hover:border-cine-gold/50"
             }`}
           >
-            <span className="text-[11px] uppercase tracking-wide font-body">
-              {i === 0 ? "Hoy" : DIAS[d.getDay()]}
-            </span>
-            <span className="font-display text-2xl leading-none mt-0.5">
-              {d.getDate()}
-            </span>
-            <span className="text-[10px] uppercase tracking-wide font-body opacity-80">
-              {MESES[d.getMonth()]}
-            </span>
+            {isShort ? (
+              <span className="text-sm font-bold tracking-wide">
+                {bottomText}
+              </span>
+            ) : (
+              <>
+                <span className={`text-[10px] uppercase font-bold tracking-wider mb-0.5 ${activo ? 'text-cine-bg/90' : 'text-cine-gold'}`}>
+                  {headerText}
+                </span>
+                <span className="text-xs sm:text-sm font-bold tracking-wide leading-none">
+                  {bottomText}
+                </span>
+              </>
+            )}
           </button>
         );
       })}

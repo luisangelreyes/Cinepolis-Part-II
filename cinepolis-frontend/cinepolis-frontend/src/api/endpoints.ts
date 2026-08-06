@@ -6,12 +6,19 @@ import type {
   CarritoCreado,
   CarritoResponse,
   PeliculaDetalle,
+  MenuDulceriaResponse,
+  AgregarProductoPayload,
 } from "../types/api";
 
 export async function getCartelera(complejoSlug: string, fecha?: string) {
   const { data } = await api.get<CarteleraResponse>(`/api/cartelera/${complejoSlug}`, {
     params: fecha ? { fecha } : undefined,
   });
+  return data;
+}
+
+export async function getFechasCartelera(complejoSlug: string) {
+  const { data } = await api.get<string[]>(`/api/cartelera/${complejoSlug}/fechas`);
   return data;
 }
 
@@ -50,5 +57,37 @@ export async function agregarAsientoCarrito(
 
 export async function eliminarItemCarrito(carritoId: number, detalleCarritoId: number) {
   const { data } = await api.delete(`/api/carrito/${carritoId}/items/${detalleCarritoId}`);
+  return data;
+}
+
+export async function extenderCarrito(carritoId: number) {
+  const { data } = await api.post(`/api/carrito/${carritoId}/extender`);
+  return data;
+}
+
+export async function getDulceria(complejoSlug: string) {
+  const { data } = await api.get<MenuDulceriaResponse>(`/api/dulceria/${complejoSlug}`);
+  return data;
+}
+
+export async function agregarProductoCarrito(
+  carritoId: number,
+  payload: AgregarProductoPayload
+) {
+  const { data } = await api.post(`/api/carrito/${carritoId}/productos`, payload);
+  return data;
+}
+
+export async function pagarCarrito(
+  carritoId: number,
+  payload: {
+    forma_pago: string;
+    tipo_venta?: string;
+    nombre_comprador?: string;
+    apellido_comprador?: string;
+    correo_comprador?: string;
+  }
+) {
+  const { data } = await api.post(`/api/carrito/${carritoId}/pagar`, payload);
   return data;
 }

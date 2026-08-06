@@ -29,6 +29,18 @@ def get_pelicula(pelicula_id: int, db: Session):
     return pelicula
 
 
+def get_fechas_disponibles(complejo_slug: str, db: Session):
+    consulta = text("""
+        SELECT DISTINCT f.fecha_funcion
+        FROM FUNCION f
+        JOIN SALA s ON f.sala_id = s.sala_id
+        JOIN COMPLEJO c ON s.complejo_id = c.complejo_id
+        WHERE c.slug = :slug AND f.activa = TRUE AND f.fecha_funcion >= CURRENT_DATE
+        ORDER BY f.fecha_funcion
+    """)
+    resultados = db.execute(consulta, {"slug": complejo_slug}).fetchall()
+    return [str(row[0]) for row in resultados]
+
 def get_cartelera(complejo_slug: str, fecha: str, db: Session):
     if not fecha:
         fecha = date.today().isoformat()
@@ -70,7 +82,8 @@ def get_cartelera(complejo_slug: str, fecha: str, db: Session):
 
 def get_asientos(funcion_id: int, db: Session):
     info_funcion = db.execute(text("""
-        SELECT p.titulo, s.nombre_sala, f.hora_inicio, f.fecha_funcion
+        SELECT p.pelicula_id, p.titulo, p.clasificacion, p.duracion_min, p.poster_url,
+               s.nombre_sala, f.hora_inicio, f.fecha_funcion
         FROM FUNCION f JOIN PELICULA p ON f.pelicula_id = p.pelicula_id JOIN SALA s ON f.sala_id = s.sala_id
         WHERE f.funcion_id = :fid
     """), {"fid": funcion_id}).fetchone()
@@ -92,7 +105,19 @@ def get_asientos(funcion_id: int, db: Session):
         })
         if a.estado == 'disponible': total_disponibles += 1
 
-    return {"funcion_id": funcion_id, "pelicula": info_funcion.titulo, "sala": info_funcion.nombre_sala, "horario": str(info_funcion.hora_inicio), "asientos_disponibles": total_disponibles, "mapa": mapa_filas}
+    return {
+        "funcion_id": funcion_id,
+        "pelicula_id": info_funcion.pelicula_id,
+        "pelicula": info_funcion.titulo,
+        "clasificacion": info_funcion.clasificacion,
+        "duracion_min": info_funcion.duracion_min,
+        "poster_url": info_funcion.poster_url,
+        "sala": info_funcion.nombre_sala,
+        "horario": str(info_funcion.hora_inicio),
+        "fecha_funcion": str(info_funcion.fecha_funcion),
+        "asientos_disponibles": total_disponibles,
+        "mapa": mapa_filas
+    }
 
 
 def get_precios(funcion_id: int, db: Session):

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from core.database import get_db
 from schemas.models import CrearCarritoRequest, AgregarAsientoRequest, AgregarProductoRequest, PagarCarritoRequest
-from services.cart_service import create_cart, get_cart, add_seat, add_product, remove_item, abandon_cart, pay_cart
+from services.cart_service import create_cart, get_cart, add_seat, add_product, remove_item, abandon_cart, pay_cart, extend_cart
 
 router = APIRouter(prefix="/api", tags=["Carrito y Transacción"])
 
@@ -33,3 +33,7 @@ def abandonar_carrito(carrito_id: int, db: Session = Depends(get_db)):
 @router.post("/carrito/{carrito_id}/pagar")
 def pagar_carrito(carrito_id: int, payload: PagarCarritoRequest, db: Session = Depends(get_db)):
     return pay_cart(carrito_id, payload, db)
+
+@router.post("/carrito/{carrito_id}/extender")
+def extender_carrito(carrito_id: int, db: Session = Depends(get_db)):
+    return extend_cart(carrito_id, db)

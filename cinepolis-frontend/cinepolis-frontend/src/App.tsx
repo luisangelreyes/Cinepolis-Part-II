@@ -5,20 +5,17 @@ import { SeatSelectionPage } from "./pages/SeatSelectionPage";
 
 const queryClient = new QueryClient();
 
-function CarritoPlaceholder() {
-  return (
-    <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-      <p className="font-display text-4xl tracking-wide mb-2">Dulcería y pago</p>
-      <p className="text-cine-slate">
-        Este módulo (carrito de dulcería + checkout) va en la siguiente iteración.
-      </p>
-    </div>
-  );
-}
+import { DulceriaPage } from "./pages/DulceriaPage";
+
+import { CartTimer } from "./components/CartTimer";
+import { ExpiredPage } from "./pages/ExpiredPage";
+import { CheckoutPage } from "./pages/CheckoutPage";
+import { TicketPage } from "./pages/TicketPage";
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
+      <CartTimer />
       <div className="film-grain" />
       <header className="border-b border-cine-line">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -43,7 +40,10 @@ function App() {
           <Routes>
             <Route path="/" element={<CarteleraPage />} />
             <Route path="/funcion/:funcionId/asientos" element={<SeatSelectionPage />} />
-            <Route path="/carrito" element={<CarritoPlaceholder />} />
+            <Route path="/carrito" element={<DulceriaPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/ticket" element={<TicketPage />} />
+            <Route path="/expired" element={<ExpiredPage />} />
           </Routes>
         </Layout>
       </BrowserRouter>
