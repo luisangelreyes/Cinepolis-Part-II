@@ -159,7 +159,7 @@ function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPersonaliz
                       <button
                         key={opcion.opcion_id}
                         onClick={() => toggleOpcion(regla, opcion.opcion_id)}
-                        className={`relative w-28 h-32 rounded-xl border-2 flex flex-col items-center justify-center p-2 transition-all ${
+                        className={`relative w-28 h-36 rounded-xl border-2 flex flex-col items-center justify-center p-2 transition-all ${
                           isSelected
                             ? "border-[#3e7af0] bg-[#3e7af0]/5 shadow-sm"
                             : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
@@ -173,11 +173,22 @@ function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPersonaliz
                           </div>
                         )}
                         
-                        {/* Fake image icon for the option */}
-                        <div className="w-10 h-10 mb-3 text-gray-300">
-                           <svg viewBox="0 0 24 24" fill="currentColor">
-                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
-                           </svg>
+                        {/* Real variant image or fallback icon */}
+                        <div className="w-16 h-16 mb-2 flex items-center justify-center overflow-hidden rounded-lg">
+                          {opcion.imagen_url ? (
+                            <img
+                              src={opcion.imagen_url}
+                              alt={opcion.nombre}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = "none";
+                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
+                              }}
+                            />
+                          ) : null}
+                          <svg viewBox="0 0 24 24" fill="currentColor" className={`w-10 h-10 text-gray-300 ${opcion.imagen_url ? "hidden" : ""}`}>
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+                          </svg>
                         </div>
                         
                         <span className="text-[11px] font-bold text-gray-800 text-center leading-tight mb-1">{opcion.nombre}</span>

@@ -108,6 +108,7 @@ export interface OpcionRegla {
   opcion_id: number;
   nombre: string;
   precio_extra: number;
+  imagen_url?: string;
 }
 
 export interface PersonalizacionRegla {
