@@ -9,46 +9,53 @@ engine = create_engine(os.getenv("DATABASE_URL"))
 CSV_PATH = os.path.join(os.path.dirname(__file__), "personalizaciones_maestro.csv")
 
 with engine.connect() as conn:
-    # 1. Agregar columna grupo_titulo
+    # 1. Agregar columna grupo_titulo (si no existe)
     conn.execute(text("""
         ALTER TABLE MODIFICADOR_REGLA
         ADD COLUMN IF NOT EXISTS grupo_titulo TEXT;
     """))
     conn.commit()
-    print("[OK] Columna grupo_titulo agregada (o ya existia).")
 
-    # 2. Leer CSV y construir mapa titulo_regla (mod_titulo) -> grupo_titulo
-    # OJO: Diferentes productos pueden tener el mismo mod_titulo pero diferente grupo.
-    # Necesitamos mapear (api_id_producto_padre, mod_titulo) -> grupo_titulo
-    grupo_por_regla = {}
+    # 2. Leer CSV y construir mapa id_opcion (api_id_opcion) -> grupo_titulo
+    # Esto es mucho más preciso porque las opciones son únicas, mientras que el título de la regla se repite.
+    grupo_por_opcion = {}
     with open(CSV_PATH, encoding="utf-8-sig") as f:
         for row in csv.DictReader(f):
-            api_padre = row.get("id_producto_padre", "").strip()
-            mod_titulo = row.get("mod_titulo", "").strip()
+            id_opcion = row.get("id_opcion", "").strip()
             grupo_titulo = row.get("grupo_titulo", "").strip()
             
-            if api_padre and mod_titulo and grupo_titulo:
-                grupo_por_regla[(api_padre, mod_titulo)] = grupo_titulo
+            if id_opcion and grupo_titulo:
+                grupo_por_opcion[id_opcion] = grupo_titulo
 
-    print(f"[OK] {len(grupo_por_regla)} mapeos unicos encontrados en el CSV.")
+    print(f"[OK] {len(grupo_por_opcion)} mapeos de opciones unicas encontrados en el CSV.")
 
-    # 3. Obtener las reglas actuales de la BD (con el api_id_padre que podemos obtener cruzando tablas)
-    # MODIFICADOR_REGLA tiene producto_id. PRODUCTO_DULCERIA tiene api_id.
+    # 3. Obtener las reglas actuales y sus opciones de la BD
     reglas_db = conn.execute(text("""
-        SELECT mr.regla_id, pd.api_id, mr.titulo_regla
+        SELECT mr.regla_id, mo.api_id_opcion
         FROM MODIFICADOR_REGLA mr
-        JOIN PRODUCTO_DULCERIA pd ON mr.producto_id = pd.producto_id
+        LEFT JOIN MODIFICADOR_OPCION mo ON mr.regla_id = mo.regla_id
     """)).fetchall()
 
-    actualizados = 0
+    # Agrupar por regla_id
+    opciones_por_regla = {}
     for r in reglas_db:
         regla_id = r[0]
-        api_padre = r[1]
-        titulo_regla = r[2]
+        api_id_opcion = r[1]
+        if regla_id not in opciones_por_regla:
+            opciones_por_regla[regla_id] = []
+        if api_id_opcion:
+            opciones_por_regla[regla_id].append(api_id_opcion)
 
-        grupo = grupo_por_regla.get((api_padre, titulo_regla))
+    actualizados = 0
+    for regla_id, opciones in opciones_por_regla.items():
+        grupo = None
+        # Buscar el grupo usando cualquiera de las opciones de esta regla
+        for api_id_opcion in opciones:
+            if api_id_opcion in grupo_por_opcion:
+                grupo = grupo_por_opcion[api_id_opcion]
+                break # Encontramos el grupo, ya no necesitamos checar más opciones
+        
         if not grupo:
-            # Fallback if no specific group title is found
             grupo = "Personaliza tu producto"
             
         conn.execute(
@@ -58,5 +65,5 @@ with engine.connect() as conn:
         actualizados += 1
 
     conn.commit()
-    print(f"[OK] {actualizados} reglas actualizadas con grupo_titulo.")
+    print(f"[OK] {actualizados} reglas actualizadas con grupo_titulo corregido.")
     print("[DONE] Migracion completada.")

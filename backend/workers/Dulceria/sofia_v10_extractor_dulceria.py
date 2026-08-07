@@ -102,6 +102,11 @@ query BatchProducts($cinema: String!, $country: String!, $products: [String]!) {
     tag
     productDescription
     sellable
+    order
+    catSubOrder
+    categoryOrder
+    productOrder
+    subCategoryOrder
     resource { web { normal wide promotional icon } }
     recipes   { product modifiers }
     references {
@@ -250,19 +255,25 @@ def extraer():
             # ── Maestro: solo si no lo hemos visto ───────────────────────────
             if pid not in productos_maestro:
                 productos_maestro[pid] = {
-                    "id_producto":  pid,
-                    "nombre":       limpiar(prod.get("productName")),
-                    "ingrediente":  limpiar(prod.get("ingredientName")),
-                    "categoria":    limpiar(prod.get("category")),
-                    "subcategoria": limpiar(prod.get("subCategory")),
-                    "estructura":   limpiar(prod.get("productStructure")),
-                    "tipo":         limpiar(prod.get("productType")),
-                    "promocion":    limpiar(prod.get("promotionType")),
-                    "tag":          limpiar(prod.get("tag")),
-                    "descripcion":  limpiar(prod.get("productDescription")),
-                    "img_normal":   img(web.get("normal")),
-                    "img_wide":     img(web.get("wide")),
-                    "img_promo":    img(web.get("promotional")),
+                    "id_producto":       pid,
+                    "nombre":            limpiar(prod.get("productName")),
+                    "ingrediente":       limpiar(prod.get("ingredientName")),
+                    "categoria":         limpiar(prod.get("category")),
+                    "subcategoria":      limpiar(prod.get("subCategory")),
+                    "estructura":        limpiar(prod.get("productStructure")),
+                    "tipo":              limpiar(prod.get("productType")),
+                    "promocion":         limpiar(prod.get("promotionType")),
+                    "tag":               limpiar(prod.get("tag")),
+                    "descripcion":       limpiar(prod.get("productDescription")),
+                    "order":             prod.get("order"),
+                    "category_order":    prod.get("categoryOrder"),
+                    "cat_sub_order":     prod.get("catSubOrder"),
+                    "product_order":     prod.get("productOrder"),
+                    "sub_category_order":prod.get("subCategoryOrder"),
+                    "img_normal":        img(web.get("normal")),
+                    "img_wide":          img(web.get("wide")),
+                    "img_promo":         img(web.get("promotional")),
+                    "img_icon":          img(web.get("icon")),
                     "primer_complejo_visto": slug,
                 }
 
@@ -305,6 +316,7 @@ def extraer():
             try:
                 data3 = extraer_batch(session, headers, cinema_semilla, lote)
                 for m in data3:
+                    web_m = ((m.get("resource") or {}).get("web") or {})
                     mapa_mods[str(m["product"])] = {
                         "nombre":       limpiar(m.get("productName")),
                         "ingrediente":  limpiar(m.get("ingredientName")),
@@ -312,7 +324,9 @@ def extraer():
                         "descuento":    precio(m.get("discount")),
                         "tipo":         limpiar(m.get("productType")),
                         "estructura":   limpiar(m.get("productStructure")),
-                        "img_normal":   img((m.get("resource") or {}).get("web", {}).get("normal")),
+                        "activo":       m.get("active", True),
+                        "img_normal":   img(web_m.get("normal")),
+                        "img_icon":     img(web_m.get("icon")),
                     }
             except Exception as e:
                 print(f"    ⚠ Lote {i} falló: {e}")
@@ -367,9 +381,11 @@ def extraer():
                         "opcion_ingrediente": info.get("ingrediente", ""),
                         "opcion_tipo":        info.get("tipo", ""),
                         "opcion_estructura":  info.get("estructura", ""),
+                        "opcion_activa":      info.get("activo", True),
                         "precio_extra_mxn":   info.get("precio_extra", 0.0),
                         "descuento_mxn":      info.get("descuento", 0.0),
                         "opcion_imagen":      info.get("img_normal", ""),
+                        "opcion_imagen_icon": info.get("img_icon", ""),
                     })
 
     # ── Guardar CSVs ──────────────────────────────────────────────────────────
