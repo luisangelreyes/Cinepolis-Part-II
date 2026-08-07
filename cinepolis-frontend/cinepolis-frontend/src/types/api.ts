@@ -119,13 +119,18 @@ export interface PersonalizacionRegla {
   opciones: OpcionRegla[];
 }
 
+export interface PasoPersonalizacion {
+  grupo_titulo: string;
+  reglas: PersonalizacionRegla[];
+}
+
 export interface ProductoDulceria {
   producto_id: number;
   nombre: string;
   descripcion: string;
   imagen_url: string;
   precio: number;
-  personalizacion: PersonalizacionRegla[];
+  personalizacion: PasoPersonalizacion[];
 }
 
 export interface CategoriaDulceria {

@@ -5,7 +5,7 @@ def get_catalogo(complejo_slug: str, db: Session):
     consulta = text("""
         SELECT 
             cd.nombre_categoria, pd.producto_id, pd.nombre_producto, pd.descripcion, pd.imagen_url, dc.precio_actual,
-            mr.regla_id, mr.titulo_regla, mr.min_items, mr.max_items,
+            mr.regla_id, mr.titulo_regla, mr.min_items, mr.max_items, mr.grupo_titulo,
             mo.opcion_id, mo.nombre_opcion, mo.precio_adicional, mo.imagen_url AS opcion_imagen_url
         FROM COMPLEJO c
         JOIN CATALOGO_COMPLEJO cc ON c.complejo_id = cc.complejo_id
@@ -36,11 +36,19 @@ def get_catalogo(complejo_slug: str, db: Session):
             }
             
         if regla_id:
+            grupo_titulo = row.grupo_titulo or "Personaliza tu producto"
             prod_obj = catalogo[cat_nombre][prod_id]["personalizacion"]
-            if regla_id not in prod_obj:
-                prod_obj[regla_id] = {"regla_id": regla_id, "titulo": row.titulo_regla, "limite_minimo": row.min_items, "limite_maximo": row.max_items, "opciones": []}
+            if grupo_titulo not in prod_obj:
+                prod_obj[grupo_titulo] = {"grupo_titulo": grupo_titulo, "reglas": {}}
+            
+            if regla_id not in prod_obj[grupo_titulo]["reglas"]:
+                prod_obj[grupo_titulo]["reglas"][regla_id] = {
+                    "regla_id": regla_id, "titulo": row.titulo_regla, 
+                    "limite_minimo": row.min_items, "limite_maximo": row.max_items, "opciones": []
+                }
+                
             if row.opcion_id:
-                prod_obj[regla_id]["opciones"].append({
+                prod_obj[grupo_titulo]["reglas"][regla_id]["opciones"].append({
                     "opcion_id": row.opcion_id,
                     "nombre": row.nombre_opcion,
                     "precio_extra": float(row.precio_adicional),
@@ -51,8 +59,13 @@ def get_catalogo(complejo_slug: str, db: Session):
     for cat, productos_dict in catalogo.items():
         lista_productos = []
         for p in productos_dict.values():
-            p["personalizacion"] = list(p["personalizacion"].values())
+            pasos_list = []
+            for grupo_obj in p["personalizacion"].values():
+                grupo_obj["reglas"] = list(grupo_obj["reglas"].values())
+                pasos_list.append(grupo_obj)
+            p["personalizacion"] = pasos_list
             lista_productos.append(p)
         menu_final.append({"categoria": cat, "productos": lista_productos})
 
     return {"complejo": complejo_slug, "menu": menu_final}
+

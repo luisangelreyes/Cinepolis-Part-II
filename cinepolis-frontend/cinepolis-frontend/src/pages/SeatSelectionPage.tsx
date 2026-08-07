@@ -140,7 +140,6 @@ export function SeatSelectionPage() {
 
   const { data: mapaData, isLoading, isError, error } = useAsientosFuncion(fid);
   const { data: preciosData } = usePreciosFuncion(fid);
-  const complejoSlug = useAppStore((s) => s.complejoSlug);
   const carritoId = useAppStore((s) => s.carritoId);
   const setCarritoId = useAppStore((s) => s.setCarritoId);
 
