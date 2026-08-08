@@ -109,11 +109,13 @@ export interface OpcionRegla {
   nombre: string;
   precio_extra: number;
   imagen_url?: string;
+  es_default?: boolean;
 }
 
 export interface PersonalizacionRegla {
   regla_id: number;
   titulo: string;
+  tipo_modificador?: string;
   limite_minimo: number;
   limite_maximo: number;
   opciones: OpcionRegla[];
@@ -121,6 +123,7 @@ export interface PersonalizacionRegla {
 
 export interface PasoPersonalizacion {
   grupo_titulo: string;
+  grupo_orden?: number;
   reglas: PersonalizacionRegla[];
 }
 

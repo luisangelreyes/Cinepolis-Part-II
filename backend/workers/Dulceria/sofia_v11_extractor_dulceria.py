@@ -338,11 +338,12 @@ def upsert_modificador_regla(conn, prod_id, gru_titulo, mod_titulo, mod_tipo,
 
     row = conn.execute(text("""
         INSERT INTO MODIFICADOR_REGLA
-            (producto_id, titulo_regla, tipo_modificador, min_items, max_items, grupo_titulo)
-        VALUES (:pid, :titulo, :tipo, :min, :max, :grupo)
-        ON CONFLICT (producto_id, grupo_titulo, titulo_regla, tipo_modificador) DO UPDATE SET
+            (producto_id, titulo_regla, tipo_modificador, min_items, max_items, grupo_titulo, grupo_orden)
+        VALUES (:pid, :titulo, :tipo, :min, :max, :grupo, :g_orden)
+        ON CONFLICT (producto_id, grupo_titulo, grupo_orden, titulo_regla, tipo_modificador) DO UPDATE SET
             min_items   = EXCLUDED.min_items,
-            max_items   = EXCLUDED.max_items
+            max_items   = EXCLUDED.max_items,
+            grupo_orden = EXCLUDED.grupo_orden
         RETURNING regla_id
     """), {
         "pid":   prod_id,
@@ -351,19 +352,21 @@ def upsert_modificador_regla(conn, prod_id, gru_titulo, mod_titulo, mod_tipo,
         "min":   min_sel,
         "max":   max_sel,
         "grupo": gru_titulo or titulo_regla,
+        "g_orden": grupo_orden,
     }).fetchone()
     return row[0]
 
-def upsert_modificador_opcion(conn, regla_id, opt_id, nombre, precio_extra, imagen_url):
+def upsert_modificador_opcion(conn, regla_id, opt_id, nombre, precio_extra, imagen_url, es_default=False):
     """Retorna opcion_id."""
     row = conn.execute(text("""
         INSERT INTO MODIFICADOR_OPCION
-            (regla_id, api_id_opcion, nombre_opcion, precio_adicional, imagen_url)
-        VALUES (:rid, :api_id, :nombre, :precio, :img)
+            (regla_id, api_id_opcion, nombre_opcion, precio_adicional, imagen_url, es_default)
+        VALUES (:rid, :api_id, :nombre, :precio, :img, :es_default)
         ON CONFLICT (regla_id, api_id_opcion) DO UPDATE SET
             nombre_opcion    = EXCLUDED.nombre_opcion,
             precio_adicional = EXCLUDED.precio_adicional,
-            imagen_url       = COALESCE(EXCLUDED.imagen_url, MODIFICADOR_OPCION.imagen_url)
+            imagen_url       = COALESCE(EXCLUDED.imagen_url, MODIFICADOR_OPCION.imagen_url),
+            es_default       = EXCLUDED.es_default
         RETURNING opcion_id
     """), {
         "rid":    regla_id,
@@ -371,6 +374,7 @@ def upsert_modificador_opcion(conn, regla_id, opt_id, nombre, precio_extra, imag
         "nombre": nombre,
         "precio": precio_extra,
         "img":    imagen_url,
+        "es_default": es_default,
     }).fetchone()
     return row[0]
 
@@ -465,7 +469,7 @@ def procesar_modificadores_producto(conn, prod, prod_id, catalogo_id,
                 es_default = opt_id in (mod.get("defaults") or [])
 
                 opcion_id = upsert_modificador_opcion(
-                    conn, regla_id, opt_id, nombre, precio_extra, imagen
+                    conn, regla_id, opt_id, nombre, precio_extra, imagen, es_default
                 )
                 upsert_disponibilidad_mod(
                     conn, opcion_id, catalogo_id, activo, precio_extra

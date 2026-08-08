@@ -22,7 +22,10 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
   const [seleccion, setSeleccion] = useState<Record<number, number[]>>(() => {
     const init: Record<number, number[]> = {};
     producto.personalizacion.forEach(paso => {
-      paso.reglas.forEach(r => { init[r.regla_id] = []; });
+      paso.reglas.forEach(r => { 
+        const defaults = r.opciones.filter(o => o.es_default).map(o => o.opcion_id);
+        init[r.regla_id] = defaults.length > 0 ? defaults : []; 
+      });
     });
     return init;
   });
@@ -31,15 +34,14 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
 
   // Lógica Dinámica de Límite (Específico para Palomitas en Combos)
   const getDynamicLimit = (regla: PersonalizacionRegla): number => {
-    // Si la regla es de sabores y estamos en Palomitas (asumimos por el max_items=4 y la existencia de tamaño)
-    if (regla.limite_maximo > 1 && regla.titulo.toLowerCase().includes("sabor")) {
-      // Buscar si en este mismo paso hay una regla de tamaño (max=1)
-      const reglaTamaño = pasoActual?.reglas.find(r => r.limite_maximo === 1 && r.titulo.toLowerCase().includes("tama"));
+    if (regla.tipo_modificador === "flavor") {
+      const reglaTamaño = pasoActual?.reglas.find(r => r.tipo_modificador === "size");
       if (reglaTamaño) {
         const seleccionTamaño = seleccion[reglaTamaño.regla_id]?.[0];
         if (seleccionTamaño) {
           const opcion = reglaTamaño.opciones.find(o => o.opcion_id === seleccionTamaño);
-          if (opcion?.nombre.toLowerCase().includes("jumbo")) {
+          const opcionName = opcion?.nombre.toLowerCase() || "";
+          if (opcionName.includes("jumbo") || opcionName.includes("palomitas") || opcionName === "chicos") {
             return 2;
           }
         }
@@ -59,11 +61,12 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
         // Al cambiar de tamaño, si el nuevo límite de sabores es menor a la cantidad seleccionada, reseteamos sabores
         const newSelection = { ...prev, [regla.regla_id]: current[0] === opcionId ? [] : [opcionId] };
         
-        if (regla.titulo.toLowerCase().includes("tama")) {
-            const reglaSabor = pasoActual?.reglas.find(r => r.limite_maximo > 1 && r.titulo.toLowerCase().includes("sabor"));
+        if (regla.tipo_modificador === "size") {
+            const reglaSabor = pasoActual?.reglas.find(r => r.tipo_modificador === "flavor");
             if (reglaSabor) {
-                const isJumbo = regla.opciones.find(o => o.opcion_id === opcionId)?.nombre.toLowerCase().includes("jumbo");
-                if (isJumbo) {
+                const opcionName = regla.opciones.find(o => o.opcion_id === opcionId)?.nombre.toLowerCase() || "";
+                const isJumboOrPalomitas = opcionName.includes("jumbo") || opcionName.includes("palomitas") || opcionName === "chicos";
+                if (isJumboOrPalomitas) {
                     // Si se seleccionó jumbo, recortar sabores a max 2 si hay más
                     if ((newSelection[reglaSabor.regla_id] || []).length > 2) {
                         newSelection[reglaSabor.regla_id] = newSelection[reglaSabor.regla_id].slice(0, 2);
@@ -87,7 +90,8 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
     if (step === 0) return true;
     return pasoActual!.reglas.every(regla => {
       // Si es la regla de sabores extras y el toggle no está activo, no es obligatoria
-      if (regla.limite_maximo > 1 && regla.titulo.toLowerCase().includes("sabor") && !saboresExtrasActivo[step]) {
+      const isMultiFlavor = regla.tipo_modificador === "flavor" && regla.limite_maximo > 1;
+      if (isMultiFlavor && !saboresExtrasActivo[step]) {
           return true; // Se asume sabor tradicional
       }
       const count = (seleccion[regla.regla_id] ?? []).length;
@@ -210,7 +214,8 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
              
              <div className="max-w-4xl mx-auto px-6 py-8 space-y-12">
                 {pasoActual?.reglas.map(regla => {
-                    const isFlavor = regla.limite_maximo > 1 && regla.titulo.toLowerCase().includes("sabor");
+                    const isMultiFlavor = regla.tipo_modificador === "flavor" && regla.limite_maximo > 1;
+                    const isFlavor = regla.tipo_modificador === "flavor";
                     const limit = getDynamicLimit(regla);
                     const isToggleActive = saboresExtrasActivo[step];
 
@@ -222,7 +227,7 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
                                 <div className="h-px bg-gray-300 flex-1"></div>
                             </div>
                             
-                            {isFlavor && (
+                            {isMultiFlavor && (
                                 <div className="mb-6 bg-gray-50 rounded-xl p-4 border border-gray-100">
                                     <div className="flex justify-between items-center mb-4">
                                         <div>
@@ -264,7 +269,7 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
                                 </div>
                             )}
 
-                            {(!isFlavor || isToggleActive) && (
+                            {(!isMultiFlavor || isToggleActive) && (
                                 <div className="flex flex-wrap gap-4 justify-center">
                                 {regla.opciones.map(opcion => {
                                     const isSelected = (seleccion[regla.regla_id] ?? []).includes(opcion.opcion_id);
@@ -275,7 +280,7 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
                                     let extra = opcion.precio_extra;
                                     if (extra >= producto.precio) extra = 0; // Error de mapeo CSV
                                     
-                                    if (regla.limite_maximo === 1) {
+                                    if (regla.tipo_modificador === "size") {
                                         // Tamaños (muestran el precio base del componente + extra, o al menos el extra, el CSV dice ej. $116)
                                         priceText = `$${extra.toFixed(2)}`;
                                     } else {
@@ -284,7 +289,7 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
                                     }
                                     
                                     // Hack para ocultar el 0.00 de mantequilla que dice el usuario
-                                    if (extra === 0 && isFlavor) priceText = "";
+                                    if (extra === 0 && regla.tipo_modificador !== "size") priceText = "";
 
                                     return (
                                     <button
@@ -297,7 +302,7 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
                                         }`}
                                     >
                                         {isSelected && (
-                                        <div className={`absolute -top-2 -right-2 text-white w-6 h-6 rounded-md flex items-center justify-center shadow-md ${isFlavor ? COLORS[selectIndex] : 'bg-[#3e7af0]'}`}>
+                                        <div className={`absolute -top-2 -right-2 text-white w-6 h-6 rounded-md flex items-center justify-center shadow-md ${isMultiFlavor ? COLORS[selectIndex] : 'bg-[#3e7af0]'}`}>
                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                             </svg>
@@ -337,7 +342,7 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
 
         {/* Footer Fixed Bar */}
         <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 sm:px-10 py-5 flex items-center justify-between shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
-          <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2">
+          <div className={`flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 ${step > 0 ? 'invisible' : ''}`}>
             <span className="font-display text-3xl font-black text-[#0b162c]">${precioTotal.toFixed(2)}<span className="text-xl text-gray-400 font-sans">*</span></span>
             <span className="text-gray-400 text-[10px]">*El precio puede variar según tu personalización.</span>
           </div>

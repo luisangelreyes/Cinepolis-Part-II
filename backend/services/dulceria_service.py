@@ -15,10 +15,13 @@ def get_catalogo(complejo_slug: str, db: Session):
             mr.min_items,
             mr.max_items,
             mr.grupo_titulo,
+            mr.grupo_orden,
+            mr.tipo_modificador,
             mo.opcion_id,
             mo.nombre_opcion,
             dm.precio_extra      AS precio_adicional,
-            mo.imagen_url        AS opcion_imagen_url
+            mo.imagen_url        AS opcion_imagen_url,
+            mo.es_default
         FROM COMPLEJO c
         JOIN CATALOGO_COMPLEJO cc
             ON c.complejo_id = cc.complejo_id
@@ -38,7 +41,7 @@ def get_catalogo(complejo_slug: str, db: Session):
             AND dm.catalogo_id = cc.catalogo_id
         WHERE c.slug = :slug
           AND (mo.opcion_id IS NULL OR dm.activo = TRUE)
-        ORDER BY cd.categoria_id, pd.producto_id, mr.regla_id, dm.precio_extra DESC
+        ORDER BY cd.categoria_id, pd.producto_id, mr.grupo_orden, mr.regla_id, dm.precio_extra DESC
     """)
 
     resultados = db.execute(consulta, {"slug": complejo_slug}).fetchall()
@@ -65,25 +68,32 @@ def get_catalogo(complejo_slug: str, db: Session):
 
         if regla_id:
             grupo_titulo = row.grupo_titulo or "Personaliza tu producto"
+            grupo_orden = row.grupo_orden or 0
+            
+            # Utilizar una clave única para el grupo para evitar colapsos por nombre
+            grupo_key = f"{grupo_titulo}_{grupo_orden}"
+            
             prod_obj = catalogo[cat_nombre][prod_id]["personalizacion"]
-            if grupo_titulo not in prod_obj:
-                prod_obj[grupo_titulo] = {"grupo_titulo": grupo_titulo, "reglas": {}}
+            if grupo_key not in prod_obj:
+                prod_obj[grupo_key] = {"grupo_titulo": grupo_titulo, "grupo_orden": grupo_orden, "reglas": {}}
 
-            if regla_id not in prod_obj[grupo_titulo]["reglas"]:
-                prod_obj[grupo_titulo]["reglas"][regla_id] = {
+            if regla_id not in prod_obj[grupo_key]["reglas"]:
+                prod_obj[grupo_key]["reglas"][regla_id] = {
                     "regla_id":      regla_id,
                     "titulo":        row.titulo_regla,
+                    "tipo_modificador": row.tipo_modificador,
                     "limite_minimo": row.min_items,
                     "limite_maximo": row.max_items,
                     "opciones":      [],
                 }
 
             if row.opcion_id:
-                prod_obj[grupo_titulo]["reglas"][regla_id]["opciones"].append({
+                prod_obj[grupo_key]["reglas"][regla_id]["opciones"].append({
                     "opcion_id":   row.opcion_id,
                     "nombre":      row.nombre_opcion,
                     "precio_extra": float(row.precio_adicional or 0),
                     "imagen_url":  row.opcion_imagen_url or "",
+                    "es_default":  row.es_default or False,
                 })
 
     menu_final = []
@@ -94,6 +104,10 @@ def get_catalogo(complejo_slug: str, db: Session):
             for grupo_obj in p["personalizacion"].values():
                 grupo_obj["reglas"] = list(grupo_obj["reglas"].values())
                 pasos_list.append(grupo_obj)
+            
+            # Ordenar pasos por grupo_orden
+            pasos_list.sort(key=lambda x: x.get("grupo_orden", 0))
+            
             p["personalizacion"] = pasos_list
             lista_productos.append(p)
         menu_final.append({"categoria": cat, "productos": lista_productos})
