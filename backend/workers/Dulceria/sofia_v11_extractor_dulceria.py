@@ -28,6 +28,10 @@ import random
 import csv
 from datetime import datetime
 
+# Evitar errores de codificación en Windows con emojis
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8")
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
@@ -336,10 +340,9 @@ def upsert_modificador_regla(conn, prod_id, gru_titulo, mod_titulo, mod_tipo,
         INSERT INTO MODIFICADOR_REGLA
             (producto_id, titulo_regla, tipo_modificador, min_items, max_items, grupo_titulo)
         VALUES (:pid, :titulo, :tipo, :min, :max, :grupo)
-        ON CONFLICT (producto_id, titulo_regla, tipo_modificador) DO UPDATE SET
+        ON CONFLICT (producto_id, grupo_titulo, titulo_regla, tipo_modificador) DO UPDATE SET
             min_items   = EXCLUDED.min_items,
-            max_items   = EXCLUDED.max_items,
-            grupo_titulo = EXCLUDED.grupo_titulo
+            max_items   = EXCLUDED.max_items
         RETURNING regla_id
     """), {
         "pid":   prod_id,
@@ -428,6 +431,18 @@ def procesar_modificadores_producto(conn, prod, prod_id, catalogo_id,
             defaults   = ", ".join(str(d) for d in (mod.get("defaults") or []))
             has_rules  = mod.get("hasRules", False)
 
+            # --- NUEVA LÓGICA DE NEGOCIO PARA PRECIOS DE COMBOS ---
+            # Si el producto padre es un combo, los tamaños de los items (size) no deben
+            # sumar el precio absoluto a la cuenta, sino solo la diferencia (upsize).
+            min_size_price = 0.0
+            if prod.get("productStructure") in ("combo", "compound") and mod_tipo == "size":
+                precios_opt = []
+                for opt_id in mod.get("modifierProductList") or []:
+                    opt_info = mods_resueltos.get(str(opt_id), {})
+                    precios_opt.append(opt_info.get("precio_extra", 0.0))
+                if precios_opt:
+                    min_size_price = min(precios_opt)
+
             regla_id = upsert_modificador_regla(
                 conn, prod_id,
                 gru_titulo, mod_titulo, mod_tipo,
@@ -440,6 +455,11 @@ def procesar_modificadores_producto(conn, prod, prod_id, catalogo_id,
                 info   = mods_resueltos.get(opt_id, {})
                 nombre = info.get("nombre") or f"Opción {opt_id}"
                 precio_extra = info.get("precio_extra", 0.0)
+                
+                # Descontar el precio base del combo en caso de ser "size"
+                if prod.get("productStructure") in ("combo", "compound") and mod_tipo == "size":
+                    precio_extra = max(0.0, precio_extra - min_size_price)
+
                 activo = info.get("activo", True)
                 imagen = info.get("img_icon") or info.get("img_normal")
                 es_default = opt_id in (mod.get("defaults") or [])
