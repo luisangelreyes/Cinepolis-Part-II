@@ -99,7 +99,7 @@ export function CheckoutPage() {
   }, [carritoData, mapaData, preciosData]);
 
   const dulceria = useMemo(() => {
-    if (!carritoData || !menuData) return [];
+    if (!carritoData || !menuData || !menuData.menu) return [];
     const flatProductos = menuData.menu.flatMap((c: any) => c.productos);
     const productosMap = new Map(flatProductos.map((p: any) => [p.producto_id, p]));
     
