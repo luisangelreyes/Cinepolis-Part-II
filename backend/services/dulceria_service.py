@@ -44,6 +44,11 @@ def get_catalogo(complejo_slug: str, db: Session):
             AND dm.catalogo_id = cc.catalogo_id
         WHERE c.slug = :slug
           AND (mo.opcion_id IS NULL OR dm.activo = TRUE)
+          AND (mr.regla_id IS NULL OR NOT EXISTS (
+              SELECT 1 FROM MODIFICADOR_REGLA mr_new 
+              WHERE mr_new.producto_id = mr.producto_id 
+                AND mr_new.grupo_titulo = mr.grupo_titulo || ' 1'
+          ))
         ORDER BY cd.categoria_id, pd.producto_id, mr.grupo_orden, mr.regla_id, dm.precio_extra DESC
     """)
 
