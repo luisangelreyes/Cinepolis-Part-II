@@ -150,5 +150,5 @@ export interface AgregarProductoPayload {
   producto_id: number;
   cantidad: number;
   precio_unitario: number;
-  personalizaciones: { opcion_id: number; porcentaje: number; cantidad: number }[];
+  personalizaciones: { opcion_id: number; porcentaje?: number; cantidad: number }[];
 }

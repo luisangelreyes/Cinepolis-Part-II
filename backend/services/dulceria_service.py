@@ -19,7 +19,10 @@ def get_catalogo(complejo_slug: str, db: Session):
             mr.tipo_modificador,
             mo.opcion_id,
             mo.nombre_opcion,
-            dm.precio_extra      AS precio_adicional,
+            CASE
+                WHEN dc.precio_actual > 0 THEN COALESCE(dm.precio_extra, 0)
+                ELSE mo.precio_adicional
+            END AS precio_adicional,
             mo.imagen_url        AS opcion_imagen_url,
             mo.es_default
         FROM COMPLEJO c

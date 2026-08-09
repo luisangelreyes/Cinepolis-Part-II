@@ -346,6 +346,19 @@ export function CheckoutPage() {
                     )}
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <p className="text-xs text-cine-cream font-medium line-clamp-1">{d.nombre}</p>
+                      
+                      {/* Personalizations (Flavors, Sizes, etc.) */}
+                      {d.personalizaciones && d.personalizaciones.length > 0 && (
+                        <div className="text-[10px] text-cine-slate/80 space-y-0.5 mt-1">
+                          {d.personalizaciones.map((pers: any, i: number) => (
+                            <div key={i} className="flex items-center gap-1.5">
+                              <span className="w-1 h-1 rounded-full bg-cine-slate/50"></span>
+                              <span className="truncate max-w-[150px]">{pers.nombre_opcion}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
                       <div className="flex justify-between items-center mt-1">
                         <span className="text-[10px] text-cine-slate font-mono">{d.cantidad}x</span>
                         <span className="text-cine-gold font-mono text-xs">${(Number(d.precio_unitario) * d.cantidad).toFixed(2)}</span>

@@ -420,7 +420,26 @@ def procesar_modificadores_producto(conn, prod, prod_id, catalogo_id,
     n_reglas = 0
     n_opciones = 0
 
-    for setting in prod.get("settings") or []:
+    settings = prod.get("settings") or []
+    
+    # --- PRE-PROCESS SETTINGS PARA EVITAR COLISIONES EN COMBOS ---
+    # Algunos combos (ej: Combo Skittles con 2 refrescos) traen grupos repetidos
+    # con exactamente el mismo título. Les agregamos un sufijo (1, 2) para que
+    # no colisionen en la BD y se muestren como selecciones separadas.
+    title_counts = {}
+    for s in settings:
+        t = s.get("title")
+        if t:
+            title_counts[t] = title_counts.get(t, 0) + 1
+    
+    title_counters = {}
+    for s in settings:
+        t = s.get("title")
+        if t and title_counts[t] > 1:
+            title_counters[t] = title_counters.get(t, 0) + 1
+            s["title"] = f"{t} {title_counters[t]}"
+
+    for setting in settings:
         gru_titulo = limpiar(setting.get("title"))
         gru_orden  = setting.get("order", 0)
 
@@ -436,10 +455,12 @@ def procesar_modificadores_producto(conn, prod, prod_id, catalogo_id,
             has_rules  = mod.get("hasRules", False)
 
             # --- NUEVA LÓGICA DE NEGOCIO PARA PRECIOS DE COMBOS ---
-            # Si el producto padre es un combo, los tamaños de los items (size) no deben
+            # Si el producto padre es un combo y tiene precio base > 0, los tamaños de los items (size) no deben
             # sumar el precio absoluto a la cuenta, sino solo la diferencia (upsize).
+            # Si el precio base es 0 (como en M&M's Mega standalone), se mantiene el precio absoluto de la opción.
             min_size_price = 0.0
-            if prod.get("productStructure") in ("combo", "compound") and mod_tipo == "size":
+            prod_price = precio(prod.get("price"))
+            if prod.get("productStructure") in ("combo", "compound") and mod_tipo == "size" and prod_price > 0:
                 precios_opt = []
                 for opt_id in mod.get("modifierProductList") or []:
                     opt_info = mods_resueltos.get(str(opt_id), {})
@@ -461,7 +482,7 @@ def procesar_modificadores_producto(conn, prod, prod_id, catalogo_id,
                 precio_extra = info.get("precio_extra", 0.0)
                 
                 # Descontar el precio base del combo en caso de ser "size"
-                if prod.get("productStructure") in ("combo", "compound") and mod_tipo == "size":
+                if prod.get("productStructure") in ("combo", "compound") and mod_tipo == "size" and prod_price > 0:
                     precio_extra = max(0.0, precio_extra - min_size_price)
 
                 activo = info.get("activo", True)

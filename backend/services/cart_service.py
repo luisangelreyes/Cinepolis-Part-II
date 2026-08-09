@@ -40,8 +40,23 @@ def get_cart(carrito_id: int, db: Session):
     carrito = db.execute(text("SELECT carrito_id, estado, fecha_creacion, fecha_expiracion, socio_id FROM CARRITO WHERE carrito_id = :cid"), {"cid": carrito_id}).fetchone()
     if not carrito: raise HTTPException(status_code=404, detail="Carrito no encontrado.")
     items = db.execute(text("SELECT detalle_carrito_id, tipo_item, cantidad, precio_unitario, asiento_id, producto_id, tipo_boleto_id FROM DETALLE_CARRITO WHERE carrito_id = :cid ORDER BY detalle_carrito_id"), {"cid": carrito_id}).fetchall()
-    subtotal = sum(float(i.precio_unitario) * i.cantidad for i in items)
-    return {"carrito_id": carrito_id, "estado": carrito.estado, "fecha_expiracion": carrito.fecha_expiracion, "items": [dict(i._mapping) for i in items], "subtotal": subtotal}
+    
+    items_list = []
+    subtotal = 0.0
+    for i in items:
+        item_dict = dict(i._mapping)
+        subtotal += float(i.precio_unitario) * i.cantidad
+        if i.tipo_item == 'producto':
+            pers = db.execute(text("""
+                SELECT dp.opcion_id, dp.porcentaje, dp.cantidad, mo.nombre_opcion 
+                FROM DETALLE_PERSONALIZACION dp
+                JOIN MODIFICADOR_OPCION mo ON dp.opcion_id = mo.opcion_id
+                WHERE dp.detalle_carrito_id = :did
+            """), {"did": i.detalle_carrito_id}).fetchall()
+            item_dict["personalizaciones"] = [dict(p._mapping) for p in pers]
+        items_list.append(item_dict)
+        
+    return {"carrito_id": carrito_id, "estado": carrito.estado, "fecha_expiracion": carrito.fecha_expiracion, "items": items_list, "subtotal": subtotal}
 
 def add_seat(carrito_id: int, payload: AgregarAsientoRequest, db: Session):
     try:
@@ -62,8 +77,8 @@ def add_seat(carrito_id: int, payload: AgregarAsientoRequest, db: Session):
 def add_product(carrito_id: int, payload: AgregarProductoRequest, db: Session):
     try:
         _validar_carrito_activo(db, carrito_id)
-        suma_porcentajes = sum(p.porcentaje or 0 for p in payload.personalizaciones)
-        if suma_porcentajes > 100: raise HTTPException(status_code=400, detail="La suma de porcentajes de personalización no puede exceder 100%.")
+        # Se elimina la validación estricta de suma_porcentajes > 100 aquí
+        # porque en Combos la suma total puede superar 100% al sumar distintos modificadores.
         detalle = db.execute(text("""
             INSERT INTO DETALLE_CARRITO (carrito_id, tipo_item, cantidad, precio_unitario, asiento_id, producto_id, promocion_id, tipo_boleto_id)
             VALUES (:cid, 'producto', :cant, :precio, NULL, :pid, NULL, NULL) RETURNING detalle_carrito_id

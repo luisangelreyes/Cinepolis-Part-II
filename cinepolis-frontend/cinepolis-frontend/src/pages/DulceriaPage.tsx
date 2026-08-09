@@ -147,25 +147,19 @@ export function DulceriaPage() {
     if (!carritoData || !menuData) return [];
     const flatProductos = menuData.menu.flatMap((c: any) => c.productos);
     const productosMap = new Map(flatProductos.map((p: any) => [p.producto_id, p]));
-    const grouped = new Map<number, { nombre: string; cantidad: number; precio: number; detalleIds: number[] }>();
-    carritoData.items.forEach((i: any) => {
-      if (i.tipo_item === "producto" && i.producto_id != null) {
+    
+    return carritoData.items
+      .filter((i: any) => i.tipo_item === "producto" && i.producto_id != null)
+      .map((i: any) => {
         const prod = productosMap.get(i.producto_id) as any;
-        if (grouped.has(i.producto_id)) {
-          const g = grouped.get(i.producto_id)!;
-          g.cantidad += i.cantidad;
-          g.detalleIds.push(i.detalle_carrito_id);
-        } else {
-          grouped.set(i.producto_id, {
-            nombre: prod?.nombre ?? `Producto ${i.producto_id}`,
-            cantidad: i.cantidad,
-            precio: Number(i.precio_unitario),
-            detalleIds: [i.detalle_carrito_id],
-          });
-        }
-      }
-    });
-    return Array.from(grouped.values());
+        return {
+          detalle_carrito_id: i.detalle_carrito_id,
+          nombre: prod?.nombre ?? `Producto ${i.producto_id}`,
+          cantidad: i.cantidad,
+          precio: Number(i.precio_unitario),
+          personalizaciones: i.personalizaciones || [],
+        };
+      });
   }, [carritoData, menuData]);
 
   const subtotalDulceria = productosEnCarrito.reduce((a, p) => a + p.precio * p.cantidad, 0);
@@ -196,12 +190,13 @@ export function DulceriaPage() {
 
   const handlePersonalizacionConfirmada = (
     prod: ProductoDulceria,
-    personalizaciones: { opcion_id: number; porcentaje: number; cantidad: number }[]
+    personalizaciones: { opcion_id: number; porcentaje?: number; cantidad: number }[],
+    precioFinal: number
   ) => {
     mutAgregar.mutate({
       producto_id: prod.producto_id,
       cantidad: 1,
-      precio_unitario: prod.precio,
+      precio_unitario: precioFinal,
       personalizaciones,
     });
     setProductoSeleccionado(null);
@@ -240,7 +235,7 @@ export function DulceriaPage() {
       {productoSeleccionado && (
         <ModalPersonalizacion
           producto={productoSeleccionado}
-          onAgregar={(sel) => handlePersonalizacionConfirmada(productoSeleccionado, sel)}
+          onAgregar={(sel, precioFinal) => handlePersonalizacionConfirmada(productoSeleccionado, sel, precioFinal)}
           onCerrar={() => setProductoSeleccionado(null)}
         />
       )}
@@ -369,23 +364,37 @@ export function DulceriaPage() {
                   <span>No has agregado alimentos</span>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {productosEnCarrito.map((p, idx) => (
-                    <div key={idx} className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="flex items-center gap-1">
+                    <div key={idx} className="flex flex-col gap-1 border-b border-cine-line/30 pb-2 last:border-0 last:pb-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <button
-                            onClick={() => {
-                              const item = carritoData?.items.find((i: any) => i.tipo_item === "producto" && i.producto_id === (carritoData?.items.filter((x: any) => x.tipo_item === "producto")[idx]?.producto_id));
-                              if (item) mutEliminar.mutate(item.detalle_carrito_id);
-                            }}
-                            className="w-5 h-5 rounded-full border border-cine-line text-cine-slate hover:border-cine-crimson hover:text-cine-crimson transition-colors text-xs flex items-center justify-center"
-                          >−</button>
-                          <span className="font-mono text-cine-cream text-xs font-bold w-4 text-center">{p.cantidad}</span>
+                            onClick={() => mutEliminar.mutate(p.detalle_carrito_id)}
+                            className="w-4 h-4 rounded-full bg-cine-slate/20 hover:bg-red-500/20 text-cine-slate hover:text-red-500 flex items-center justify-center transition-colors flex-shrink-0"
+                            disabled={mutEliminar.isPending}
+                          >
+                            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M20 12H4" />
+                            </svg>
+                          </button>
+                          <span className="font-bold text-xs text-cine-cream-dim bg-cine-slate/20 px-1.5 rounded">{p.cantidad}</span>
+                          <span className="text-xs font-semibold text-cine-cream-dim truncate">{p.nombre}</span>
                         </div>
-                        <span className="text-cine-cream-dim text-xs line-clamp-1">{p.nombre}</span>
+                        <span className="font-mono text-xs text-cine-gold flex-shrink-0">${(p.precio * p.cantidad).toFixed(2)}</span>
                       </div>
-                      <span className="font-mono text-cine-gold text-xs flex-shrink-0">${(p.precio * p.cantidad).toFixed(2)}</span>
+                      
+                      {/* Personalizations (Flavors, Sizes, etc.) */}
+                      {p.personalizaciones && p.personalizaciones.length > 0 && (
+                        <div className="pl-6 text-[10px] text-cine-slate/80 space-y-0.5">
+                          {p.personalizaciones.map((pers: any, i: number) => (
+                            <div key={i} className="flex items-center gap-1.5">
+                              <span className="w-1 h-1 rounded-full bg-cine-slate/50"></span>
+                              <span className="truncate max-w-[150px]">{pers.nombre_opcion}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

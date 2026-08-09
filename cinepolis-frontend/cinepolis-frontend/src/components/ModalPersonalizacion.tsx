@@ -3,7 +3,7 @@ import type { ProductoDulceria, PersonalizacionRegla } from "../types/api";
 
 interface ModalPersonalizacionProps {
   producto: ProductoDulceria;
-  onAgregar: (seleccion: { opcion_id: number; porcentaje: number; cantidad: number }[]) => void;
+  onAgregar: (seleccion: { opcion_id: number; porcentaje: number; cantidad: number }[], precioFinal: number) => void;
   onCerrar: () => void;
 }
 
@@ -41,8 +41,11 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
         if (seleccionTamaño) {
           const opcion = reglaTamaño.opciones.find(o => o.opcion_id === seleccionTamaño);
           const opcionName = opcion?.nombre.toLowerCase() || "";
-          if (opcionName.includes("jumbo") || opcionName.includes("palomitas") || opcionName === "chicos") {
+          if (opcionName.includes("jumbo") || (opcionName.includes("palomitas") && !opcionName.includes("chic"))) {
             return 2;
+          }
+          if (opcionName.includes("para llevar")) {
+            return 4;
           }
         }
       }
@@ -52,12 +55,14 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
 
   const toggleOpcion = (regla: PersonalizacionRegla, opcionId: number) => {
     const limit = getDynamicLimit(regla);
+    const isMultiFlavor = regla.tipo_modificador === "flavor" && regla.limite_maximo > 1;
     
     setSeleccion(prev => {
       const current = prev[regla.regla_id] ?? [];
       
-      // Regla exclusiva (Radio)
-      if (limit === 1) {
+      // Regla exclusiva (Radio) - incluye multi-flavor cuando el toggle está OFF
+      const isRadioMode = limit === 1 || (isMultiFlavor && !saboresExtrasActivo[step]);
+      if (isRadioMode) {
         // Al cambiar de tamaño, si el nuevo límite de sabores es menor a la cantidad seleccionada, reseteamos sabores
         const newSelection = { ...prev, [regla.regla_id]: current[0] === opcionId ? [] : [opcionId] };
         
@@ -77,7 +82,7 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
         return newSelection;
       }
       
-      // Múltiples opciones (Checkbox)
+      // Múltiples opciones (Checkbox) - solo cuando multi-flavor toggle está ON
       if (current.includes(opcionId)) {
         return { ...prev, [regla.regla_id]: current.filter(id => id !== opcionId) };
       }
@@ -111,7 +116,7 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
           const numSabores = ids.length;
           ids.forEach(opcionId => {
             // Lógica de porcentajes: si hay 1->100, 2->50/50, 3->50/25/25, 4->25/25/25/25
-            let pct = 0;
+            let pct: number | null = null;
             if (regla.limite_maximo > 1) {
                 if (numSabores === 1) pct = 100;
                 else if (numSabores === 2) pct = 50;
@@ -121,18 +126,35 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
             }
             personalizaciones.push({
               opcion_id: opcionId,
-              porcentaje: pct,
+              porcentaje: pct !== null ? pct : undefined as any,
               cantidad: 1,
             });
           });
         });
       });
-      onAgregar(personalizaciones);
+      onAgregar(personalizaciones, precioTotal);
     }
   };
 
   const precioTotal = useMemo(() => {
     let basePrice = producto.precio;
+    let trueBasePrice = basePrice;
+    
+    // Para productos individuales, el precio de la API ya incluye el costo de las opciones por defecto
+    if (isSimple) {
+      producto.personalizacion.forEach(paso => {
+        paso.reglas.forEach(regla => {
+          regla.opciones.forEach(o => {
+            if (o.es_default) {
+              let extra = o.precio_extra;
+              if (extra >= producto.precio) extra = 0;
+              trueBasePrice -= extra;
+            }
+          });
+        });
+      });
+    }
+
     let additions = 0;
 
     producto.personalizacion.forEach(paso => {
@@ -141,27 +163,37 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
           .map(id => regla.opciones.find(o => o.opcion_id === id))
           .filter(Boolean);
 
-        // SOLO sumar el precio_extra. Ya no usamos Math.max porque rompía el flujo de combos.
-        selectedOpts.forEach(o => { 
-            // Ignoramos los precios base que están mapeados como precio extra enorme.
-            // Si el precio extra es mayor o igual al precio del combo, es un error de mapeo del CSV de Cinépolis.
-            // Para el clon, asumimos que si el precio extra >= precio combo, en realidad es 0 (precio base).
+        if (isSimple) {
+          // Productos simples (M&M's solo, Magnum, etc.): usar precio_extra directamente
+          selectedOpts.forEach(o => { 
             let extra = o!.precio_extra;
             if (extra >= producto.precio) {
-                // Solo para el Magnum moonlight/etc donde la variante costaba casi igual al producto base
-                if (isSimple && extra > 0) {
-                    // Si es un producto simple (Magnum), el precio extra SÍ reemplaza el precio base si es mayor
-                    if (extra > basePrice) basePrice = extra;
-                    extra = 0; 
-                } else {
-                    extra = 0;
-                }
+              if (extra > 0) {
+                if (extra > trueBasePrice) trueBasePrice = extra;
+                extra = 0; 
+              } else {
+                extra = 0;
+              }
             }
             additions += extra; 
-        });
+          });
+        } else {
+          // Combos: solo cobrar el INCREMENTO sobre la opción más barata de la regla.
+          // Esto refleja que el precio base del combo ya incluye la opción más económica.
+          // Ejemplo: si todas las opciones de sabor de M&M cuestan $92, el $92 base YA está 
+          // incluido en el precio del combo. Solo Caramelo ($29) sobre Mantequilla ($0) es extra.
+          const allPrices = regla.opciones.map(o => o.precio_extra);
+          const minPrice = allPrices.length > 0 ? Math.min(...allPrices) : 0;
+          
+          selectedOpts.forEach(o => { 
+            const upgrade = Math.max(0, o!.precio_extra - minPrice);
+            additions += upgrade;
+          });
+        }
       });
     });
-    return basePrice + additions;
+    
+    return (isSimple ? trueBasePrice : basePrice) + additions;
   }, [seleccion, producto, isSimple]);
 
   return (
@@ -231,7 +263,11 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
                                 <div className="mb-6 bg-gray-50 rounded-xl p-4 border border-gray-100">
                                     <div className="flex justify-between items-center mb-4">
                                         <div>
-                                            <h4 className="font-bold text-sm text-gray-800">Personaliza el sabor de tus productos desde: $25.00</h4>
+                                            <h4 className="font-bold text-sm text-gray-800">
+                                                Personaliza el sabor de tus productos desde: ${
+                                                    (regla.opciones.map(o => o.precio_extra).filter(p => p > 0).sort((a,b) => a-b)[0] || 25).toFixed(2)
+                                                }
+                                            </h4>
                                             <p className="text-xs text-gray-500 mt-1">Puedes elegir hasta {limit}</p>
                                         </div>
                                         <button 
@@ -269,70 +305,87 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
                                 </div>
                             )}
 
-                            {(!isMultiFlavor || isToggleActive) && (
-                                <div className="flex flex-wrap gap-4 justify-center">
-                                {regla.opciones.map(opcion => {
-                                    const isSelected = (seleccion[regla.regla_id] ?? []).includes(opcion.opcion_id);
-                                    const selectIndex = (seleccion[regla.regla_id] ?? []).indexOf(opcion.opcion_id);
-                                    
-                                    // Corregir display de precio
-                                    let priceText = "";
-                                    let extra = opcion.precio_extra;
-                                    if (extra >= producto.precio) extra = 0; // Error de mapeo CSV
-                                    
-                                    if (regla.tipo_modificador === "size") {
-                                        // Tamaños (muestran el precio base del componente + extra, o al menos el extra, el CSV dice ej. $116)
-                                        priceText = `$${extra.toFixed(2)}`;
+                            {/* Siempre mostramos las opciones */}
+                            <div className="flex flex-wrap gap-4 justify-center">
+                            {regla.opciones.map(opcion => {
+                                const isSelected = (seleccion[regla.regla_id] ?? []).includes(opcion.opcion_id);
+                                const selectIndex = (seleccion[regla.regla_id] ?? []).indexOf(opcion.opcion_id);
+                                
+                                // Corregir display de precio
+                                let priceText = "";
+                                let extra = opcion.precio_extra;
+                                
+                                if (regla.tipo_modificador === "size") {
+                                    if (isSimple) {
+                                        const defaultOpt = regla.opciones.find(o => o.es_default);
+                                        const defaultExtra = defaultOpt ? defaultOpt.precio_extra : 0;
+                                        
+                                        let extra_to_subtract = defaultExtra;
+                                        if (extra_to_subtract >= producto.precio) extra_to_subtract = 0;
+                                        
+                                        const trueBasePrice = producto.precio - extra_to_subtract;
+                                        
+                                        let precioReal = 0;
+                                        if (extra >= producto.precio && extra > 0) {
+                                            precioReal = extra;
+                                        } else {
+                                            precioReal = trueBasePrice + extra;
+                                        }
+                                        
+                                        priceText = `$${precioReal.toFixed(2)}`;
                                     } else {
-                                        // Sabores (muestran +$25.00)
-                                        if (extra > 0) priceText = `+ $${extra.toFixed(2)}`;
+                                        // Combo: el tamaño base está incluido ($0), solo mostrar el extra
+                                        if (extra > 0) priceText = `+$${extra.toFixed(2)}`;
+                                        else priceText = "Incluido";
                                     }
-                                    
-                                    // Hack para ocultar el 0.00 de mantequilla que dice el usuario
-                                    if (extra === 0 && regla.tipo_modificador !== "size") priceText = "";
+                                } else {
+                                    // Sabores: mostrar solo el cargo adicional
+                                    if (extra > 0) priceText = `+ $${extra.toFixed(2)}`;
+                                }
 
-                                    return (
-                                    <button
-                                        key={opcion.opcion_id}
-                                        onClick={() => toggleOpcion(regla, opcion.opcion_id)}
-                                        className={`relative w-28 h-36 rounded-xl border-2 flex flex-col items-center justify-center p-2 transition-all ${
-                                        isSelected
-                                            ? "border-[#3e7af0] bg-[#3e7af0]/5 shadow-sm"
-                                            : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
-                                        }`}
-                                    >
-                                        {isSelected && (
-                                        <div className={`absolute -top-2 -right-2 text-white w-6 h-6 rounded-md flex items-center justify-center shadow-md ${isMultiFlavor ? COLORS[selectIndex] : 'bg-[#3e7af0]'}`}>
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        </div>
-                                        )}
-                                        
-                                        <div className="w-16 h-16 mb-2 flex items-center justify-center overflow-hidden rounded-lg">
-                                        {opcion.imagen_url ? (
-                                            <img
-                                            src={opcion.imagen_url}
-                                            alt={opcion.nombre}
-                                            className="w-full h-full object-contain mix-blend-multiply"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).style.display = "none";
-                                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
-                                            }}
-                                            />
-                                        ) : null}
-                                        <svg viewBox="0 0 24 24" fill="currentColor" className={`w-10 h-10 text-gray-300 ${opcion.imagen_url ? "hidden" : ""}`}>
-                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+                                const showColorCheckmark = isMultiFlavor && isToggleActive && isSelected;
+
+                                return (
+                                <button
+                                    key={opcion.opcion_id}
+                                    onClick={() => toggleOpcion(regla, opcion.opcion_id)}
+                                    className={`relative w-28 h-36 rounded-xl border-2 flex flex-col items-center justify-center p-2 transition-all ${
+                                    isSelected
+                                        ? "border-[#3e7af0] bg-[#3e7af0]/5 shadow-sm"
+                                        : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm"
+                                    }`}
+                                >
+                                    {isSelected && (
+                                    <div className={`absolute -top-2 -right-2 text-white w-6 h-6 rounded-md flex items-center justify-center shadow-md ${showColorCheckmark ? COLORS[selectIndex] : 'bg-[#3e7af0]'}`}>
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                         </svg>
-                                        </div>
-                                        
-                                        <span className="text-[11px] font-bold text-gray-800 text-center leading-tight mb-1">{opcion.nombre}</span>
-                                        <span className="text-[10px] text-gray-500 font-mono">{priceText}</span>
-                                    </button>
-                                    );
-                                })}
-                                </div>
-                            )}
+                                    </div>
+                                    )}
+                                    
+                                    <div className="w-16 h-16 mb-2 flex items-center justify-center overflow-hidden rounded-lg">
+                                    {opcion.imagen_url ? (
+                                        <img
+                                        src={opcion.imagen_url}
+                                        alt={opcion.nombre}
+                                        className="w-full h-full object-contain mix-blend-multiply"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = "none";
+                                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
+                                        }}
+                                        />
+                                    ) : null}
+                                    <svg viewBox="0 0 24 24" fill="currentColor" className={`w-10 h-10 text-gray-300 ${opcion.imagen_url ? "hidden" : ""}`}>
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+                                    </svg>
+                                    </div>
+                                    
+                                    <span className="text-[11px] font-bold text-gray-800 text-center leading-tight mb-1">{opcion.nombre}</span>
+                                    <span className="text-[10px] text-gray-500 font-mono">{priceText}</span>
+                                </button>
+                                );
+                            })}
+                            </div>
                         </div>
                     );
                 })}
