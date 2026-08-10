@@ -21,8 +21,8 @@ const COLOR_POR_ESTADO: Record<EstadoAsiento, string> = {
   bloqueado: "#3a3f52",
 };
 
-
-const VIEW_W = 1000;
+// Margen horizontal fijo a cada lado del grid de asientos
+const SIDE_PADDING = 80;
 
 function construirLayout(mapa: Record<string, AsientoAPI[]>) {
   const filas = Object.keys(mapa).sort();
@@ -44,7 +44,11 @@ function construirLayout(mapa: Record<string, AsientoAPI[]>) {
 
   const numCols = maxCol - minCol + 1;
   const gridWidth = numCols * ASIENTO_SIZE + (numCols - 1) * GAP_X;
-  const startX = (VIEW_W - gridWidth) / 2;
+
+  // El ancho del viewBox se adapta al grid real, nunca recortará asientos
+  const VIEW_W = gridWidth + SIDE_PADDING * 2;
+
+  const startX = SIDE_PADDING;
   const startY = 80;
 
   filas.forEach((fila, i) => {
@@ -68,20 +72,21 @@ function construirLayout(mapa: Record<string, AsientoAPI[]>) {
   });
 
   const alturaTotal = startY + filas.length * (ASIENTO_SIZE + GAP_Y) + 60;
-  return { posiciones, filas, alturaTotal, startX, startY, ASIENTO_SIZE, GAP_Y };
+  return { posiciones, filas, alturaTotal, startX, startY, ASIENTO_SIZE, GAP_Y, VIEW_W };
 }
 
 export function SeatMap({ mapa, seleccionados, onToggle }: Props) {
-  const { posiciones, filas, alturaTotal, startX, startY, ASIENTO_SIZE, GAP_Y } = useMemo(() => construirLayout(mapa), [mapa]);
+  const { posiciones, filas, alturaTotal, startX, startY, ASIENTO_SIZE, GAP_Y, VIEW_W } = useMemo(() => construirLayout(mapa), [mapa]);
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-auto">
       <svg
         viewBox={`0 0 ${VIEW_W} ${alturaTotal}`}
-        className="w-full h-auto select-none"
+        className="w-full h-auto select-none min-w-[320px]"
         role="img"
         aria-label="Mapa de la sala"
       >
+
         {/* Pantalla recta */}
         <path
           d={`M ${startX - 40} 30 L ${VIEW_W - startX + 40} 30`}
