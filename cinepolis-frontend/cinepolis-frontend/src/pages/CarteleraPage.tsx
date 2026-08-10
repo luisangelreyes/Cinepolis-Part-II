@@ -3,6 +3,9 @@ import { SelectorFecha, toISODate } from "../components/SelectorFecha";
 import { PeliculaCard } from "../components/PeliculaCard";
 import { useCartelera, useFechasCartelera } from "../hooks/useCartelera";
 import { useAppStore } from "../store/useAppStore";
+import { useQuery } from "@tanstack/react-query";
+import { getCarrito } from "../api/endpoints";
+import { ConfirmChangeComplexModal } from "../components/ConfirmChangeComplexModal";
  
 // Los 19 slugs confirmados en Vision (complejo_id 1-19). Si tu base
 // existente solo tiene funciones sembradas para algunos, verás "sin
@@ -31,9 +34,35 @@ const COMPLEJOS = [
  
 export function CarteleraPage() {
   const [fecha, setFecha] = useState(toISODate(new Date()));
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
   const complejoSlug = useAppStore((s) => s.complejoSlug);
   const setComplejoSlug = useAppStore((s) => s.setComplejoSlug);
+  const carritoId = useAppStore((s) => s.carritoId);
   const { data: fechas, isLoading: isFechasLoading } = useFechasCartelera(complejoSlug);
+  
+  const { data: carritoData } = useQuery({
+    queryKey: ["carrito", carritoId],
+    queryFn: () => getCarrito(carritoId!),
+    enabled: !!carritoId,
+  });
+
+  const handleComplexChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const slug = e.target.value;
+    const hasItems = carritoData?.items && carritoData.items.length > 0;
+    
+    if (carritoId && hasItems) {
+      setPendingSlug(slug);
+    } else {
+      setComplejoSlug(slug);
+    }
+  };
+
+  const confirmComplexChange = () => {
+    if (pendingSlug) {
+      setComplejoSlug(pendingSlug);
+      setPendingSlug(null);
+    }
+  };
   
   // If we get a new list of dates and the current selected date is not in it, select the first available date.
   // We use useEffect to sync the state when `fechas` changes.
@@ -71,7 +100,7 @@ export function CarteleraPage() {
  
         <select
           value={complejoSlug}
-          onChange={(e) => setComplejoSlug(e.target.value)}
+          onChange={handleComplexChange}
           className="mt-3 bg-cine-bg-raised border border-cine-line rounded-md px-3 py-1.5 text-sm text-cine-cream-dim focus:border-cine-gold outline-none"
         >
           {COMPLEJOS.map((c) => (
@@ -118,6 +147,12 @@ export function CarteleraPage() {
           <PeliculaCard key={p.pelicula_id} pelicula={p} />
         ))}
       </div>
+
+      <ConfirmChangeComplexModal 
+        isOpen={pendingSlug !== null}
+        onConfirm={confirmComplexChange}
+        onCancel={() => setPendingSlug(null)}
+      />
     </div>
   );
 } 

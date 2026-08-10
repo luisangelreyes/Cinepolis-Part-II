@@ -25,7 +25,17 @@ export const useAppStore = create<AppState>()(
       carritoModoAlimentos: false,
       isCartOpen: false,
       socioId: null,
-      setComplejoSlug: (slug) => set({ complejoSlug: slug }),
+      setComplejoSlug: (slug) => set((state) => {
+        if (state.complejoSlug !== slug) {
+          return { 
+            complejoSlug: slug, 
+            carritoId: null, 
+            carritoFuncionId: null, 
+            carritoModoAlimentos: false 
+          };
+        }
+        return { complejoSlug: slug };
+      }),
       setCarritoId: (id, funcionId) => set({ carritoId: id, carritoFuncionId: funcionId ?? null }),
       setCarritoModoAlimentos: (modo) => set({ carritoModoAlimentos: modo }),
       setIsCartOpen: (open) => set({ isCartOpen: open }),

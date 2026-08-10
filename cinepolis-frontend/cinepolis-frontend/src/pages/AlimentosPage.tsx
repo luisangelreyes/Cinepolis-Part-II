@@ -6,6 +6,7 @@ import { getDulceria, getCarrito, agregarProductoCarrito, eliminarItemCarrito, c
 import type { ProductoDulceria } from "../types/api";
 import { ModalPersonalizacion } from "../components/ModalPersonalizacion";
 import { CartSummary } from "../components/CartSummary";
+import { ConfirmChangeComplexModal } from "../components/ConfirmChangeComplexModal";
 
 const COMPLEJOS = [
   { slug: "cinepolis-la-florida-acayucan", nombre: "La Florida (Acayucan)" },
@@ -111,6 +112,7 @@ export function AlimentosPage() {
 
   const [productoSeleccionado, setProductoSeleccionado] = useState<ProductoDulceria | null>(null);
   const catRefs = useRef<Record<string, HTMLElement | null>>({});
+  const [pendingSlug, setPendingSlug] = useState<string | null>(null);
 
   // Crear carrito si no existe
   const mutCrear = useMutation({
@@ -127,24 +129,36 @@ export function AlimentosPage() {
     }
   }, [carritoId]);
 
-  const handleCambioComplejo = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setComplejoSlug(e.target.value);
-    setCarritoId(null);
-  };
-
-  // Datos
   const { data: menuData, isLoading: isLoadingMenu } = useQuery({
     queryKey: ["dulceria", complejoSlug],
     queryFn: () => getDulceria(complejoSlug),
   });
-  
+
   const { data: carritoData } = useQuery({
     queryKey: ["carrito", carritoId],
     queryFn: () => getCarrito(carritoId!),
     enabled: !!carritoId,
   });
 
+  const handleCambioComplejo = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const slug = e.target.value;
+    const hasItems = carritoData?.items && carritoData.items.length > 0;
+    
+    if (carritoId && hasItems) {
+      setPendingSlug(slug);
+    } else {
+      setComplejoSlug(slug);
+      setCarritoId(null);
+    }
+  };
 
+  const confirmComplexChange = () => {
+    if (pendingSlug) {
+      setComplejoSlug(pendingSlug);
+      setCarritoId(null);
+      setPendingSlug(null);
+    }
+  };
 
   const mutAgregar = useMutation({
     mutationFn: (payload: any) => agregarProductoCarrito(carritoId!, payload),
@@ -322,6 +336,12 @@ export function AlimentosPage() {
           <CartSummary />
         </aside>
       </div>
+
+      <ConfirmChangeComplexModal 
+        isOpen={pendingSlug !== null}
+        onConfirm={confirmComplexChange}
+        onCancel={() => setPendingSlug(null)}
+      />
     </>
   );
 }
