@@ -247,7 +247,6 @@ export function ModalPersonalizacion({ producto, onAgregar, onCerrar }: ModalPer
              <div className="max-w-4xl mx-auto px-6 py-8 space-y-12">
                 {pasoActual?.reglas.map(regla => {
                     const isMultiFlavor = regla.tipo_modificador === "flavor" && regla.limite_maximo > 1;
-                    const isFlavor = regla.tipo_modificador === "flavor";
                     const limit = getDynamicLimit(regla);
                     const isToggleActive = saboresExtrasActivo[step];
 

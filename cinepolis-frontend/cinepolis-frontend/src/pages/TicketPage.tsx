@@ -10,7 +10,7 @@ export function TicketPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { ticket, carritoData, carritoFuncionId, complejoSlug } = location.state || {};
+  const { ticket, carritoData, carritoFuncionId, complejoSlug, carritoModoAlimentos } = location.state || {};
 
   // If no ticket, redirect home
   if (!ticket) {
@@ -18,7 +18,7 @@ export function TicketPage() {
   }
 
   // Fetch function data (for movie, room, time, seats mapping)
-  const { data: mapaData } = useAsientosFuncion(carritoFuncionId);
+  const { data: mapaData } = useAsientosFuncion(carritoModoAlimentos ? 0 : carritoFuncionId);
 
   // Fetch dulceria data (for product mapping)
   const { data: menuData } = useQuery({
@@ -60,18 +60,13 @@ export function TicketPage() {
   // Format date and time
   const formatDateTime = (horario: string) => {
     if (!horario) return "";
-    // horario comes in as "HH:MM:SS", we want a more readable format, 
-    // but the screenshot says "7 de Noviembre, 6:40 p.m."
-    // Let's use a standard format for the example
     const [h, m] = horario.split(":");
     let hour = parseInt(h, 10);
     const ampm = hour >= 12 ? "p.m." : "a.m.";
     hour = hour % 12 || 12;
-    // For the date, we can just use "Hoy" since we don't have the date in mapaData easily accessible here.
     return `Hoy, ${hour}:${m} ${ampm}`;
   };
 
-  // The code for the QR is WQ2N9W9 or similar. We can generate one based on venta_id.
   const codeStr = `WQ2N${ticket.venta_id}W9`.toUpperCase();
 
   return (
@@ -85,7 +80,7 @@ export function TicketPage() {
       </div>
 
       <h1 className="text-2xl font-bold mb-6 text-center max-w-sm">
-        {mapaData?.pelicula || "Cargando..."}
+        {ticket.boletos_confirmados === 0 ? "Tu Pedido de Alimentos" : (mapaData?.pelicula || "Cargando...")}
       </h1>
 
       {/* QR Box */}
@@ -107,27 +102,38 @@ export function TicketPage() {
 
       {/* Ticket Details */}
       <div className="w-full max-w-sm px-6 flex flex-col gap-5 text-left mb-10">
-        <div>
-          <p className="text-white/70 text-sm mb-1">Fecha y hora de la función</p>
-          <p className="font-bold text-lg">{mapaData ? formatDateTime(mapaData.horario) : "..."}</p>
-        </div>
-        
-        <div>
-          <p className="text-white/70 text-sm mb-1">Cine y sala</p>
-          <p className="font-bold text-lg">{mapaData ? `${mapaData.sala.replace('Sala', '')} ${mapaData.sala}` : "..."}</p>
-        </div>
-
         {ticket.boletos_confirmados > 0 && (
-          <div>
-            <p className="text-white/70 text-sm mb-1">Boletos ({ticket.boletos_confirmados})</p>
-            <p className="font-bold text-lg">{ticket.boletos_confirmados} Adulto</p>
-          </div>
+          <>
+            <div>
+              <p className="text-white/70 text-sm mb-1">Fecha y hora de la función</p>
+              <p className="font-bold text-lg">{mapaData ? formatDateTime(mapaData.horario) : "..."}</p>
+            </div>
+            
+            <div>
+              <p className="text-white/70 text-sm mb-1">Cine y sala</p>
+              <p className="font-bold text-lg">{mapaData ? `${mapaData.sala.replace('Sala', '')} ${mapaData.sala}` : "..."}</p>
+            </div>
+
+            {ticket.boletos_confirmados > 0 && (
+              <div>
+                <p className="text-white/70 text-sm mb-1">Boletos ({ticket.boletos_confirmados})</p>
+                <p className="font-bold text-lg">{ticket.boletos_confirmados} Adulto</p>
+              </div>
+            )}
+
+            {asientosEtiquetas && (
+              <div>
+                <p className="text-white/70 text-sm mb-1">Asientos</p>
+                <p className="font-bold text-lg">{asientosEtiquetas}</p>
+              </div>
+            )}
+          </>
         )}
 
-        {asientosEtiquetas && (
+        {ticket.boletos_confirmados === 0 && (
           <div>
-            <p className="text-white/70 text-sm mb-1">Asientos</p>
-            <p className="font-bold text-lg">{asientosEtiquetas}</p>
+            <p className="text-white/70 text-sm mb-1">Cine</p>
+            <p className="font-bold text-lg capitalize">{complejoSlug.replace(/-/g, " ")}</p>
           </div>
         )}
 

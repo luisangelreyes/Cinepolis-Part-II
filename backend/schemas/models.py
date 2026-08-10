@@ -5,6 +5,7 @@ from datetime import date
 class CrearCarritoRequest(BaseModel):
     sesion_id: Optional[int] = None   
     socio_id: Optional[int] = None    
+    complejo_slug: Optional[str] = None
 
 class AgregarAsientoRequest(BaseModel):
     asiento_id: int

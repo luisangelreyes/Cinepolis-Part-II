@@ -28,6 +28,7 @@ export function CheckoutPage() {
   const setCarritoId = useAppStore((s) => s.setCarritoId);
   const complejoSlug = useAppStore((s) => s.complejoSlug);
   const carritoFuncionId = useAppStore((s) => s.carritoFuncionId);
+  const carritoModoAlimentos = useAppStore((s) => s.carritoModoAlimentos);
 
   const [nombre, setNombre] = useState("");
   const [apellidos, setApellidos] = useState("");
@@ -61,6 +62,7 @@ export function CheckoutPage() {
         nombre_comprador: nombre,
         apellido_comprador: apellidos,
         correo_comprador: correo,
+        cargo_servicio_por_boleto: carritoModoAlimentos ? 0 : 6.0,
       });
     },
     onSuccess: (data) => {
@@ -69,7 +71,8 @@ export function CheckoutPage() {
         ticket: data, 
         carritoData, 
         carritoFuncionId,
-        complejoSlug
+        complejoSlug,
+        carritoModoAlimentos,
       };
       setCarritoId(null);
       navigate("/ticket", { state: stateToPass });
@@ -136,11 +139,11 @@ export function CheckoutPage() {
   
   const subtotal = carritoData?.subtotal || 0;
   const numBoletos = boletos.reduce((acc, b) => acc + b.cantidad, 0);
-  const cargoServicio = numBoletos * 6.0;
+  const cargoServicio = boletos.length > 0 ? numBoletos * 6.0 : 0;
   const totalPagado = subtotal + cargoServicio;
 
   const isFormValid = nombre.trim() && apellidos.trim() && correo.trim() && tarjeta.trim() && expiracion.trim() && cvv.trim();
-  const posterFallback = mapaData ? `https://placehold.co/60x80/1a1d2e/c8a96a?text=${encodeURIComponent(mapaData.pelicula.slice(0, 2))}` : "";
+  const posterFallback = (mapaData && mapaData.pelicula) ? `https://placehold.co/60x80/1a1d2e/c8a96a?text=${encodeURIComponent(mapaData.pelicula.slice(0, 2))}` : "https://placehold.co/60x80/1a1d2e/c8a96a?text=AL";
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 grid lg:grid-cols-[1fr_380px] gap-8 items-start">
@@ -243,7 +246,7 @@ export function CheckoutPage() {
           </div>
 
           {/* Movie info */}
-          {mapaData && (
+          {mapaData && boletos.length > 0 && (
             <>
               <div className="p-4 border-b border-cine-line flex gap-3 bg-cine-bg">
                 <img
@@ -290,33 +293,35 @@ export function CheckoutPage() {
           )}
 
           {/* Seats section */}
-          <div className="px-4 py-3 border-b border-cine-line">
-            <p className="text-[10px] text-cine-slate uppercase font-bold tracking-widest mb-3">
-              Asientos ({numBoletos})
-            </p>
-            {boletos.length === 0 ? (
-              <p className="text-xs text-cine-slate italic">Sin boletos</p>
-            ) : (
-              <div className="space-y-4">
-                {boletos.map((b, idx) => (
-                  <div key={b.detalle_carrito_id || idx} className="border-b border-cine-line/50 pb-3 last:border-0 last:pb-0">
-                    <div className="flex items-center gap-2 text-sm font-bold text-cine-cream mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-cine-slate" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
-                      {b.tipoNombre}
+          {boletos.length > 0 && (
+            <div className="px-4 py-3 border-b border-cine-line">
+              <p className="text-[10px] text-cine-slate uppercase font-bold tracking-widest mb-3">
+                Asientos ({numBoletos})
+              </p>
+              {boletos.length === 0 ? (
+                <p className="text-xs text-cine-slate italic">Sin boletos</p>
+              ) : (
+                <div className="space-y-4">
+                  {boletos.map((b, idx) => (
+                    <div key={b.detalle_carrito_id || idx} className="border-b border-cine-line/50 pb-3 last:border-0 last:pb-0">
+                      <div className="flex items-center gap-2 text-sm font-bold text-cine-cream mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-cine-slate" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                        </svg>
+                        {b.tipoNombre}
+                      </div>
+                      <div className="flex justify-between items-end">
+                        <p className="text-[10px] text-cine-slate font-mono ml-6">
+                          {b.etiqueta} &middot; {b.cantidad} persona{b.cantidad > 1 ? "s" : ""}
+                        </p>
+                        <span className="text-cine-gold font-mono text-xs">${(Number(b.precio_unitario) * b.cantidad).toFixed(2)}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-end">
-                      <p className="text-[10px] text-cine-slate font-mono ml-6">
-                        {b.etiqueta} &middot; {b.cantidad} persona{b.cantidad > 1 ? "s" : ""}
-                      </p>
-                      <span className="text-cine-gold font-mono text-xs">${(Number(b.precio_unitario) * b.cantidad).toFixed(2)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Alimentos section */}
           <div className="px-4 py-3 border-b border-cine-line">
@@ -377,10 +382,12 @@ export function CheckoutPage() {
                 <span>Subtotal</span>
                 <span className="font-mono text-cine-cream-dim">${subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-sm text-cine-slate">
-                <span>Cargo por servicio</span>
-                <span className="font-mono text-cine-cream-dim">${cargoServicio.toFixed(2)}</span>
-              </div>
+              {boletos.length > 0 && (
+                <div className="flex justify-between text-sm text-cine-slate">
+                  <span>Cargo por servicio</span>
+                  <span className="font-mono text-cine-cream-dim">${cargoServicio.toFixed(2)}</span>
+                </div>
+              )}
             </div>
             <div className="flex justify-between text-base font-bold text-cine-cream pt-2 border-t border-cine-line/50">
               <span className="uppercase tracking-wide">Total</span>

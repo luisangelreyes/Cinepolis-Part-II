@@ -25,7 +25,7 @@ import random
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from sqlalchemy import create_engine, text
 
@@ -45,31 +45,37 @@ API_KEY_BACKUP = "lQM6Mkvri1iHksKKCfpAiwGXq0YUZA7Nn6XAXRPr4i13LwXo"
 # Más muestras = mayor probabilidad de capturar el precio real, pero más llamadas a API.
 MAX_MUESTRAS = 3
 
+# MAPEO CORRECTO: complejo_id (BD) → cinema_vista_id (API Cinépolis) → nombre
+# Derivado cruzando slugs de la tabla COMPLEJO con los slugs del JSON de cartelera.
 COMPLEJO_VISTA_IDS = [
-    ( 1, "658",  "Acaya Coatzacoalcos"),
-    ( 2, "635",  "El Dorado Coatzacoalcos"),
-    ( 3, "484",  "El Dorado Veracruz"),
-    ( 4, "545",  "VIP El Dorado Veracruz"),
-    ( 5, "260",  "Plaza del Puerto"),
-    ( 6, "126",  "Las Américas Veracruz"),
-    ( 7, "192",  "VIP Las Américas Veracruz"),
-    ( 8, "1103", "Portal Veracruz"),
-    ( 9, "247",  "Plaza Las Américas Xalapa"),
+    ( 1, "611",  "La Florida Acayucan"),
+    ( 2, "545",  "VIP El Dorado Veracruz"),
+    ( 3, "126",  "Las Américas Veracruz"),
+    ( 4, "192",  "VIP Las Américas Veracruz"),
+    ( 5, "635",  "El Dorado Coatzacoalcos"),
+    ( 6, "658",  "Acaya Coatzacoalcos"),
+    ( 7, "443",  "Plaza Shangri-La Córdoba"),
+    ( 8, "125",  "Plaza Museo Xalapa"),
+    ( 9, "040",  "Plaza Crystal Xalapa"),
     (10, "665",  "VIP Las Américas Xalapa"),
-    (11, "040",  "Plaza Crystal Xalapa"),
-    (12, "125",  "Plaza Museo Xalapa"),
-    (13, "443",  "Plaza Shangri-La"),
-    (14, "388",  "Valle Orizaba"),
-    (15, "609",  "Río Blanco"),
-    (16, "139",  "Plaza Minatitlán"),
-    (17, "298",  "Plaza Crystal Tuxpan"),
-    (18, "611",  "La Florida Acayucan"),
-    (19, "573",  "Chedraui Martínez de la Torre"),
+    (11, "247",  "Plaza Las Américas Xalapa"),
+    (12, "573",  "Chedraui Martínez de la Torre"),
+    (13, "139",  "Plaza Minatitlán"),
+    (14, "388",  "Plaza Valle Orizaba"),
+    (15, "609",  "Río Blanco Orizaba"),
+    (16, "298",  "Plaza Crystal Tuxpan"),
+    (17, "1103", "Portal Veracruz"),
+    (18, "260",  "Plaza del Puerto Veracruz"),
+    (19, "484",  "El Dorado Veracruz"),
 ]
 
 # Overrides hardcoded — no se infieren del JSON para mayor fiabilidad
-COMPLEJOS_VIP = {4, 7, 10}           # VIP El Dorado Veracruz, VIP Las Américas Veracruz, VIP Las Américas Xalapa
-COMPLEJOS_CON_MACRO_XE = set()       # Llenar con complejo_id que realmente tienen salas MACRO XE
+COMPLEJOS_VIP = {2, 4, 10}           # VIP El Dorado Veracruz, VIP Las Américas Veracruz, VIP Las Américas Xalapa
+COMPLEJOS_CON_MACRO_XE = {3, 6, 11, 14}  # Las Américas Veracruz, Acaya Coatza, Plaza Las Américas Xalapa, Plaza Valle Orizaba
+
+# Experiencias del JSON de Cinépolis que deben ignorarse por ser eventos únicos
+# (no tienen tarifa estándar en la cartelera regular)
+EXPERIENCIAS_IGNORAR = {"SP"}  # SP = Sala Privada / Evento Especial
 
 FORMATO_MAP = {
     "2d":       11,
@@ -114,31 +120,59 @@ def cargar_sesiones_desde_json() -> dict:
         log.error(f"Error leyendo JSON: {e}")
         return {}
 
+    ahora = datetime.now()
+    margen = timedelta(hours=2)  # Solo sesiones que comiencen en 2+ horas
+    sesiones_totales = 0
+    sesiones_descartadas = 0
+
     # muestras: {(vista_id, fmt, exp): [session_id_1, session_id_2, ...]}
     muestras: dict[tuple, list[str]] = {}
-    
+
     for fun in data.get("funciones", []):
         vid = fun.get("cinema_vista_id")
         sid = fun.get("session_id")
         fmt = fun.get("formato", "2D")
         exp = fun.get("experiencia", "Tradicional")
+        dt_str = fun.get("datetime", "")
 
         if not (vid and sid):
             continue
 
+        sesiones_totales += 1
+
+        # FILTRO CLAVE: descartar sesiones pasadas o inminentes.
+        # La API de Cinépolis devuelve precios inválidos (Evento Especial, $0, etc.)
+        # para sesiones cuyo horario ya transcurrió.
+        if dt_str:
+            try:
+                dt_fun = datetime.fromisoformat(dt_str.replace("Z", ""))
+                if dt_fun < ahora + margen:
+                    sesiones_descartadas += 1
+                    continue
+            except ValueError:
+                pass  # Fecha mal formateada → la incluimos de todas formas
+
         clave = (vid, fmt, exp)
         lista = muestras.setdefault(clave, [])
-        
-        # Agregar la sesión solo si no la tenemos ya y no hemos alcanzado el límite
+
         if sid not in lista and len(lista) < MAX_MUESTRAS:
             lista.append(sid)
 
-    total_sesiones = sum(len(v) for v in muestras.values())
+    total_validas = sum(len(v) for v in muestras.values())
     log.info(
-        f"✓ {len(muestras)} combinaciones únicas extraídas del JSON local "
-        f"({total_sesiones} sesiones en total, máx {MAX_MUESTRAS} por combinación)."
+        f"✓ {len(muestras)} combinaciones únicas | {total_validas} sesiones válidas "
+        f"de {sesiones_totales} totales ({sesiones_descartadas} descartadas por expiradas/inminentes)."
     )
+
+    if not muestras:
+        log.error(
+            "❌ NINGUNA sesión futura en el JSON. "
+            "El JSON de cartelera está desactualizado. "
+            "Ejecuta Matilde V6 primero para regenerarlo con funciones futuras."
+        )
+
     return muestras
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PASO 2: ROBAR LA API KEY CON PLAYWRIGHT
@@ -194,33 +228,40 @@ query Tickets($countryId: String!, $sessionId: String!, $cinemaVistaId: String!)
 """
 
 def parsear_tipo_desde_api(ticket: dict, fallback_exp: str, fallback_fmt: str, complejo_id: int) -> tuple[int, str]:
-    """Extrae (formato_id, tipo_sala) analizando los nombres y descriptions."""
+    """Extrae (formato_id, tipo_sala) analizando los nombres y descriptions.
+    
+    Mapeo de experiencias del JSON de Cinépolis:
+      'Tradicional' → Tradicional
+      'XE'          → MACRO XE  (solo en complejos de la whitelist)
+      '4DX'         → 4DX
+      'SJ'          → Junior    (Sala Junior — código interno de Cinépolis)
+      'IMAX'        → IMAX
+      'SP'          → ignorar   (Sala Privada / Evento Especial — sin tarifa estándar)
+    """
+    exp_upper = fallback_exp.upper()
     desc = ticket.get("description", "").upper()
 
-    # Formato
+    # Formato — se detecta por la descripción del boleto que devuelve la API
     if "IMAX" in desc:   formato_id = 13 if "3D" in desc else 5
     elif "3D" in desc:   formato_id = 12
     else:                formato_id = FORMATO_MAP.get(fallback_fmt.lower(), 11)
 
-    # Tipo sala — override VIP tiene prioridad absoluta
+    # Tipo sala — el orden de evaluación importa; VIP tiene prioridad absoluta
     if complejo_id in COMPLEJOS_VIP:
         tipo_sala = "VIP"
-    elif "MACRO" in fallback_exp.upper() or "XE" in fallback_exp.upper():
+    elif exp_upper in ("XE", "MACRO XE") or "MACRO" in exp_upper:
         if complejo_id in COMPLEJOS_CON_MACRO_XE:
             tipo_sala = "MACRO XE"
         else:
             log.warning(
-                f"  ! Complejo {complejo_id} reportó experiencia MACRO XE pero no está "
-                f"en COMPLEJOS_CON_MACRO_XE — se descarta el override y se re-evalúa."
+                f"  ! Complejo {complejo_id} reportó experiencia XE/MACRO XE pero no está "
+                f"en COMPLEJOS_CON_MACRO_XE — degradando a Tradicional."
             )
-            if "IMAX" in fallback_exp.upper():   tipo_sala = "IMAX"
-            elif "4D" in fallback_exp.upper():   tipo_sala = "4DX"
-            elif "JUNIOR" in fallback_exp.upper(): tipo_sala = "Junior"
-            else:                                tipo_sala = "Tradicional"
-    elif "IMAX" in fallback_exp.upper():   tipo_sala = "IMAX"
-    elif "4D" in fallback_exp.upper():     tipo_sala = "4DX"
-    elif "JUNIOR" in fallback_exp.upper(): tipo_sala = "Junior"
-    else:                                  tipo_sala = "Tradicional"
+            tipo_sala = "Tradicional"
+    elif exp_upper == "4DX" or "4D" in exp_upper:  tipo_sala = "4DX"
+    elif exp_upper == "SJ" or "JUNIOR" in exp_upper: tipo_sala = "Junior"  # SJ = Sala Junior
+    elif "IMAX" in exp_upper:                      tipo_sala = "IMAX"
+    else:                                          tipo_sala = "Tradicional"
 
     return formato_id, tipo_sala
 
@@ -309,8 +350,11 @@ def main():
         for complejo_id, vista_id, nombre_cine in COMPLEJO_VISTA_IDS:
             log.info(f"━━ [{complejo_id:02d}] {nombre_cine} (vista_id={vista_id})")
 
-            # Filtrar sesiones que pertenecen a este cine
-            sesiones_cine = {k: v for k, v in mapa_sesiones.items() if k[0] == vista_id}
+            # Filtrar sesiones que pertenecen a este cine, excluyendo experiencias ignoradas (SP, etc.)
+            sesiones_cine = {
+                k: v for k, v in mapa_sesiones.items()
+                if k[0] == vista_id and k[2].upper() not in EXPERIENCIAS_IGNORAR
+            }
 
             if not sesiones_cine:
                 log.warning("  ! Sin sesiones en JSON para este complejo.")

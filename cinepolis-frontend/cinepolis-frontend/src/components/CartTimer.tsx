@@ -8,6 +8,7 @@ import type { CarritoResponse } from '../types/api';
 export function CartTimer() {
   const carritoId = useAppStore((s) => s.carritoId);
   const setCarritoId = useAppStore((s) => s.setCarritoId);
+  const carritoModoAlimentos = useAppStore((s) => s.carritoModoAlimentos);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -22,7 +23,7 @@ export function CartTimer() {
   }, [carritoId]);
 
   useEffect(() => {
-    if (!carritoId) {
+    if (!carritoId || carritoModoAlimentos) {
       setTimeLeft(null);
       setShowWarning(false);
       return;
@@ -51,7 +52,7 @@ export function CartTimer() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [carritoId, queryClient, navigate, setCarritoId, dismissed]);
+  }, [carritoId, carritoModoAlimentos, queryClient, navigate, setCarritoId, dismissed]);
 
   if (!showWarning || timeLeft === null) return null;
 

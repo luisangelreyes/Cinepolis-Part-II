@@ -37,7 +37,7 @@ export async function getPreciosPorFuncion(funcionId: number) {
   return data;
 }
 
-export async function crearCarrito(payload: { sesion_id?: number; socio_id?: number }) {
+export async function crearCarrito(payload: { sesion_id?: number; socio_id?: number; complejo_slug?: string }) {
   const { data } = await api.post<CarritoCreado>(`/api/carrito`, payload);
   return data;
 }
@@ -86,6 +86,7 @@ export async function pagarCarrito(
     nombre_comprador?: string;
     apellido_comprador?: string;
     correo_comprador?: string;
+    cargo_servicio_por_boleto?: number;
   }
 ) {
   const { data } = await api.post(`/api/carrito/${carritoId}/pagar`, payload);
