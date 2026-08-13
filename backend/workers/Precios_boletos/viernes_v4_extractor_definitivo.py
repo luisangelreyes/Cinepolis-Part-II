@@ -45,33 +45,33 @@ API_KEY_BACKUP = "lQM6Mkvri1iHksKKCfpAiwGXq0YUZA7Nn6XAXRPr4i13LwXo"
 # Más muestras = mayor probabilidad de capturar el precio real, pero más llamadas a API.
 MAX_MUESTRAS = 3
 
-# MAPEO CORRECTO: complejo_id (BD) → cinema_vista_id (API Cinépolis) → nombre
-# Derivado cruzando slugs de la tabla COMPLEJO con los slugs del JSON de cartelera.
-COMPLEJO_VISTA_IDS = [
-    ( 1, "611",  "La Florida Acayucan"),
-    ( 2, "545",  "VIP El Dorado Veracruz"),
-    ( 3, "126",  "Las Américas Veracruz"),
-    ( 4, "192",  "VIP Las Américas Veracruz"),
-    ( 5, "635",  "El Dorado Coatzacoalcos"),
-    ( 6, "658",  "Acaya Coatzacoalcos"),
-    ( 7, "443",  "Plaza Shangri-La Córdoba"),
-    ( 8, "125",  "Plaza Museo Xalapa"),
-    ( 9, "040",  "Plaza Crystal Xalapa"),
-    (10, "665",  "VIP Las Américas Xalapa"),
-    (11, "247",  "Plaza Las Américas Xalapa"),
-    (12, "573",  "Chedraui Martínez de la Torre"),
-    (13, "139",  "Plaza Minatitlán"),
-    (14, "388",  "Plaza Valle Orizaba"),
-    (15, "609",  "Río Blanco Orizaba"),
-    (16, "298",  "Plaza Crystal Tuxpan"),
-    (17, "1103", "Portal Veracruz"),
-    (18, "260",  "Plaza del Puerto Veracruz"),
-    (19, "484",  "El Dorado Veracruz"),
+# MAPEO CORRECTO: slug (BD) → cinema_vista_id (API Cinépolis) → nombre
+# Usamos slugs para consultar el complejo_id dinámicamente desde la BD.
+COMPLEJO_VISTA_SLUGS = [
+    ("cinepolis-la-florida-acayucan", "611",  "La Florida Acayucan"),
+    ("cinepolis-vip-el-dorado-veracruz", "545",  "VIP El Dorado Veracruz"),
+    ("cinepolis-las-americas-veracruz", "126",  "Las Américas Veracruz"),
+    ("cinepolis-vip-las-americas-veracruz", "192",  "VIP Las Américas Veracruz"),
+    ("cinepolis-el-dorado-coatzacoalcos", "635",  "El Dorado Coatzacoalcos"),
+    ("cinepolis-acaya-coatzacoalcos", "658",  "Acaya Coatzacoalcos"),
+    ("cinepolis-plaza-shangri-la-cordoba", "443",  "Plaza Shangri-La Córdoba"),
+    ("cinepolis-plaza-museo-xalapa", "125",  "Plaza Museo Xalapa"),
+    ("cinepolis-plaza-crystal-xalapa", "040",  "Plaza Crystal Xalapa"),
+    ("cinepolis-vip-las-americas-xalapa", "665",  "VIP Las Américas Xalapa"),
+    ("cinepolis-plaza-las-americas-xalapa", "247",  "Plaza Las Américas Xalapa"),
+    ("cinepolis-chedraui-martinez-de-la-torre", "573",  "Chedraui Martínez de la Torre"),
+    ("cinepolis-plaza-minatitlan", "139",  "Plaza Minatitlán"),
+    ("cinepolis-plaza-valle-orizaba", "388",  "Plaza Valle Orizaba"),
+    ("cinepolis-rio-blanco-orizaba", "609",  "Río Blanco Orizaba"),
+    ("cinepolis-plaza-crystal-tuxpan", "298",  "Plaza Crystal Tuxpan"),
+    ("cinepolis-portal-veracruz", "1103", "Portal Veracruz"),
+    ("cinepolis-plaza-del-puerto-veracruz", "260",  "Plaza del Puerto Veracruz"),
+    ("cinepolis-el-dorado-veracruz", "484",  "El Dorado Veracruz"),
 ]
 
-# Overrides hardcoded — no se infieren del JSON para mayor fiabilidad
-COMPLEJOS_VIP = {2, 4, 10}           # VIP El Dorado Veracruz, VIP Las Américas Veracruz, VIP Las Américas Xalapa
-COMPLEJOS_CON_MACRO_XE = {3, 6, 11, 14}  # Las Américas Veracruz, Acaya Coatza, Plaza Las Américas Xalapa, Plaza Valle Orizaba
+# Overrides hardcoded — basados en vista_id (que no cambia)
+COMPLEJOS_VIP = {"545", "192", "665"}
+COMPLEJOS_CON_MACRO_XE = {"126", "658", "247", "388"}
 
 # Experiencias del JSON de Cinépolis que deben ignorarse por ser eventos únicos
 # (no tienen tarifa estándar en la cartelera regular)
@@ -227,7 +227,7 @@ query Tickets($countryId: String!, $sessionId: String!, $cinemaVistaId: String!)
 }
 """
 
-def parsear_tipo_desde_api(ticket: dict, fallback_exp: str, fallback_fmt: str, complejo_id: int) -> tuple[int, str]:
+def parsear_tipo_desde_api(ticket: dict, fallback_exp: str, fallback_fmt: str, vista_id: str) -> tuple[int, str]:
     """Extrae (formato_id, tipo_sala) analizando los nombres y descriptions.
     
     Mapeo de experiencias del JSON de Cinépolis:
@@ -247,14 +247,14 @@ def parsear_tipo_desde_api(ticket: dict, fallback_exp: str, fallback_fmt: str, c
     else:                formato_id = FORMATO_MAP.get(fallback_fmt.lower(), 11)
 
     # Tipo sala — el orden de evaluación importa; VIP tiene prioridad absoluta
-    if complejo_id in COMPLEJOS_VIP:
+    if vista_id in COMPLEJOS_VIP:
         tipo_sala = "VIP"
     elif exp_upper in ("XE", "MACRO XE") or "MACRO" in exp_upper:
-        if complejo_id in COMPLEJOS_CON_MACRO_XE:
+        if vista_id in COMPLEJOS_CON_MACRO_XE:
             tipo_sala = "MACRO XE"
         else:
             log.warning(
-                f"  ! Complejo {complejo_id} reportó experiencia XE/MACRO XE pero no está "
+                f"  ! Complejo {vista_id} reportó experiencia XE/MACRO XE pero no está "
                 f"en COMPLEJOS_CON_MACRO_XE — degradando a Tradicional."
             )
             tipo_sala = "Tradicional"
@@ -340,14 +340,26 @@ def main():
         mapa_boletos = {row.nombre.lower().strip(): row.tipo_boleto_id for row in res}
 
         # Estructura para acumular precios:
-        # precios_acumulados[(complejo_id, formato_id, tipo_boleto_id, tipo_sala)] = {
+        # precios_acumulados[(complejo_id, formato_id, tipo_boleto_id, tipo_sala, area_code)] = {
         #     "precios": [precio1, precio2, ...],
         #     "cargo": cargo_srv,
-        #     "descripcion": "Admisión General 3D"
+        #     "descripcion": "Admisión General 3D",
+        #     "area_category_code": "0000000001"
         # }
         precios_acumulados: dict[tuple, dict] = {}
 
-        for complejo_id, vista_id, nombre_cine in COMPLEJO_VISTA_IDS:
+        # Mapear los slugs a los IDs reales de la BD
+        slug_to_id = {}
+        res_complejos = conn.execute(text("SELECT slug, complejo_id FROM COMPLEJO")).fetchall()
+        for c in res_complejos:
+            slug_to_id[c.slug] = c.complejo_id
+
+        for slug, vista_id, nombre_cine in COMPLEJO_VISTA_SLUGS:
+            complejo_id = slug_to_id.get(slug)
+            if not complejo_id:
+                log.warning(f"  ! Complejo '{slug}' no encontrado en BD. Omitiendo.")
+                continue
+
             log.info(f"━━ [{complejo_id:02d}] {nombre_cine} (vista_id={vista_id})")
 
             # Filtrar sesiones que pertenecen a este cine, excluyendo experiencias ignoradas (SP, etc.)
@@ -372,6 +384,8 @@ def main():
                         continue
 
                     for area in areas_tickets:
+                        area_code = area.get("areaCategoryCode") or ""  # ← capturar código de área
+
                         for t in area.get("tickets", []):
                             # Ignorar paquetes extraños y 2x1
                             if t.get("isPackageTicket") or t.get("type") != "general":
@@ -382,7 +396,7 @@ def main():
                                 continue
 
                             tipo_boleto_id = obtener_tipo_boleto_id(conn, description, mapa_boletos)
-                            formato_id, tipo_sala = parsear_tipo_desde_api(t, exp, fmt, complejo_id)
+                            formato_id, tipo_sala = parsear_tipo_desde_api(t, exp, fmt, vista_id)
 
                             precio_base = t.get("priceInCents", 0) / 100.0
                             cargo_srv   = t.get("bookingFee", 0) / 100.0
@@ -392,24 +406,27 @@ def main():
                             for extra in concesiones:
                                 precio_base += extra.get("charge", 0) / 100.0
 
-                            clave = (complejo_id, formato_id, tipo_boleto_id, tipo_sala)
+                            # La clave ahora incluye area_code para distinguir
+                            # asientos de distinto precio dentro de la misma sala
+                            clave = (complejo_id, formato_id, tipo_boleto_id, tipo_sala, area_code)
 
                             if clave not in precios_acumulados:
                                 precios_acumulados[clave] = {
                                     "precios": [],
                                     "cargo": cargo_srv,
                                     "descripcion": description,
+                                    "area_category_code": area_code,  # ← guardar en el registro
                                 }
 
                             precios_acumulados[clave]["precios"].append(precio_base)
                             log.info(
                                 f"    → {tipo_sala:11s} | Fmt:{formato_id} | Bol:{tipo_boleto_id} | "
-                                f"${precio_base:.2f} (sesión {session_id})"
+                                f"Area:{area_code} | ${precio_base:.2f} (sesión {session_id})"
                             )
 
     # ── POST-PROCESAMIENTO: seleccionar precio MÁXIMO por combinación ──────────
     todos_registros = []
-    for (complejo_id, formato_id, tipo_boleto_id, tipo_sala), datos in precios_acumulados.items():
+    for (complejo_id, formato_id, tipo_boleto_id, tipo_sala, area_code), datos in precios_acumulados.items():
         precios = datos["precios"]
         precio_max  = max(precios)
         precio_min  = min(precios)
@@ -418,18 +435,19 @@ def main():
         if len(precios) > 1 and precio_max != precio_min:
             log.info(
                 f"  [DESCUENTO DETECTADO] Complejo {complejo_id}, Fmt {formato_id}, "
-                f"Tipo {tipo_sala}: precios observados {precios} → usando máximo ${precio_max:.2f} "
+                f"Tipo {tipo_sala}, Area {area_code}: precios observados {precios} → usando máximo ${precio_max:.2f} "
                 f"(mínimo descartado: ${precio_min:.2f})"
             )
 
         todos_registros.append({
-            "complejo_id":   complejo_id,
-            "formato_id":    formato_id,
-            "tipo_boleto_id": tipo_boleto_id,
-            "tipo_sala":     tipo_sala,
-            "precio":        precio_max,
-            "cargo":         precio_cargo,
-            "n_muestras":    len(precios),
+            "complejo_id":        complejo_id,
+            "formato_id":         formato_id,
+            "tipo_boleto_id":     tipo_boleto_id,
+            "tipo_sala":          tipo_sala,
+            "area_category_code": area_code,  # ← nuevo
+            "precio":             precio_max,
+            "cargo":              precio_cargo,
+            "n_muestras":         len(precios),
         })
 
     # ── EXPORTAR SQL ──────────────────────────────────────────────────────────
@@ -440,14 +458,17 @@ def main():
         lineas = [
             "BEGIN;\n",
             "-- V4: Precios extraídos con muestreo múltiple (precio máximo = precio real de taquilla).",
+            "-- V4.1: Incluye area_category_code para vincular precio a área física de la sala.",
             "TRUNCATE TABLE PRECIO_BOLETO RESTART IDENTITY;\n",
         ]
         for r in todos_registros:
+            area_code = r.get("area_category_code") or ""
+            area_sql  = f"'{area_code}'" if area_code else "NULL"
             lineas.append(
                 f"INSERT INTO PRECIO_BOLETO "
-                f"(complejo_id, formato_id, tipo_boleto_id, tipo_sala, precio, cargo_servicio_online) "
+                f"(complejo_id, formato_id, tipo_boleto_id, tipo_sala, area_category_code, precio, cargo_servicio_online) "
                 f"VALUES ({r['complejo_id']}, {r['formato_id']}, {r['tipo_boleto_id']}, "
-                f"'{r['tipo_sala']}', {r['precio']:.2f}, {r['cargo']:.2f}) "
+                f"'{r['tipo_sala']}', {area_sql}, {r['precio']:.2f}, {r['cargo']:.2f}) "
                 f"ON CONFLICT ON CONSTRAINT uq_precio_boleto DO UPDATE "
                 f"SET precio=EXCLUDED.precio, cargo_servicio_online=EXCLUDED.cargo_servicio_online;"
             )
@@ -458,7 +479,7 @@ def main():
 
         # ── Resumen de cobertura ──────────────────────────────────────────────
         complejos_con_datos  = {r["complejo_id"] for r in todos_registros}
-        complejos_esperados  = {c[0] for c in COMPLEJO_VISTA_IDS}
+        complejos_esperados  = set(slug_to_id.values())
         faltantes = sorted(complejos_esperados - complejos_con_datos)
         descuentos_detectados = [
             r for r in todos_registros if r["n_muestras"] > 1

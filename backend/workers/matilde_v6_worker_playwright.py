@@ -749,8 +749,8 @@ class ExportadorVisionWorker:
             poster_sql = _sql_val(p.get("poster_url"))
             banner_sql = _sql_val(p.get("banner_url"))
             trailer_sql = _sql_val(p.get("trailer_url"))
-            sinopsis_raw = p.get("sinopsis", "") or ""
-            sinopsis_sql = _sql_val(sinopsis_raw) if sinopsis_raw else "NULL"
+            sinopsis_raw = p.get("sinopsis", "") or "Sin sinopsis disponible"
+            sinopsis_sql = _sql_val(sinopsis_raw)
 
             lines.append(
                 f"INSERT INTO PELICULA (vista_id, titulo, slug, clasificacion, genero, duracion_min, sinopsis, categoria, poster_url, banner_url, trailer_url) "

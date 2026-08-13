@@ -26,103 +26,176 @@ function formatHora(horario: string): string {
 
 /* ─── Modal de selección de boletos ─── */
 interface ModalBoletosProps {
-  tarifas: { tipo_boleto_id: number; tipo_boleto: string; precio: number; cargo_servicio: number; total_online: number }[];
-  totalAsientos: number;
+  tarifas: { tipo_boleto_id: number; tipo_boleto: string; precio: number; cargo_servicio: number; total_online: number; area_code: string }[];
+  asientosSeleccionados: AsientoAPI[];
   onConfirmar: (asignacion: { tipo_boleto_id: number; total_online: number; tipo_boleto: string }[]) => void;
   onCerrar: () => void;
 }
 
-function ModalBoletos({ tarifas, totalAsientos, onConfirmar, onCerrar }: ModalBoletosProps) {
+function ModalBoletos({ tarifas, asientosSeleccionados, onConfirmar, onCerrar }: ModalBoletosProps) {
+  // 1. Contar cuántos asientos se seleccionaron por cada area_code
+  const seatsByArea = useMemo(() => {
+    const groups: Record<string, number> = {};
+    asientosSeleccionados.forEach(a => {
+      groups[a.area_code] = (groups[a.area_code] || 0) + 1;
+    });
+    return groups;
+  }, [asientosSeleccionados]);
+
+  // 2. Agrupar las tarifas disponibles por area_code
+  const tarifasByArea = useMemo(() => {
+    const groups: Record<string, typeof tarifas> = {};
+    tarifas.forEach(t => {
+      if (!groups[t.area_code]) groups[t.area_code] = [];
+      groups[t.area_code].push(t);
+    });
+    return groups;
+  }, [tarifas]);
+
+  // 3. Estado local para las cantidades asignadas de cada tipo de boleto
   const [cantidades, setCantidades] = useState<Record<number, number>>(() => {
     const init: Record<number, number> = {};
     tarifas.forEach(t => { init[t.tipo_boleto_id] = 0; });
+    
+    // Auto-asignación inteligente: Si un área (ej. Camastro) solo tiene 1 boleto posible,
+    // le asignamos automáticamente la cantidad de asientos de esa área.
+    Object.entries(seatsByArea).forEach(([area_code, totalSeats]) => {
+      const options = tarifasByArea[area_code] || [];
+      if (options.length === 1) {
+        init[options[0].tipo_boleto_id] = totalSeats;
+      } else if (options.length > 0) {
+        // Por defecto, si hay varias opciones, asignar todos al primer boleto (generalmente "General")
+        // para ahorrarle clics al usuario
+        init[options[0].tipo_boleto_id] = totalSeats;
+      }
+    });
     return init;
   });
 
-  const totalAsignado = Object.values(cantidades).reduce((a, b) => a + b, 0);
-  const restante = totalAsientos - totalAsignado;
+  const getAssignedForArea = (area_code: string) => {
+    const options = tarifasByArea[area_code] || [];
+    return options.reduce((sum, t) => sum + (cantidades[t.tipo_boleto_id] || 0), 0);
+  };
 
-  const setQty = (id: number, delta: number) => {
+  // Verificamos si en cada área ya se asignó exactamente la cantidad de asientos elegidos
+  const isReady = Object.entries(seatsByArea).every(([area_code, totalSeats]) => {
+    return getAssignedForArea(area_code) === totalSeats;
+  });
+
+  const setQty = (area_code: string, tipo_boleto_id: number, delta: number) => {
     setCantidades(prev => {
-      const current = prev[id] ?? 0;
+      const current = prev[tipo_boleto_id] || 0;
       const next = Math.max(0, current + delta);
-      const otherTotal = Object.entries(prev)
-        .filter(([k]) => Number(k) !== id)
-        .reduce((a, [, v]) => a + v, 0);
-      if (next + otherTotal > totalAsientos) return prev;
-      return { ...prev, [id]: next };
+      
+      const options = tarifasByArea[area_code] || [];
+      const currentTotalArea = options.reduce((sum, t) => {
+        return sum + (t.tipo_boleto_id === tipo_boleto_id ? next : (prev[t.tipo_boleto_id] || 0));
+      }, 0);
+
+      const maxForArea = seatsByArea[area_code] || 0;
+      if (currentTotalArea > maxForArea) return prev;
+      return { ...prev, [tipo_boleto_id]: next };
     });
   };
 
   const handleConfirmar = () => {
-    // Build a flat array of ticket assignments (one per asiento)
     const asignacion: { tipo_boleto_id: number; total_online: number; tipo_boleto: string }[] = [];
-    tarifas.forEach(t => {
-      const qty = cantidades[t.tipo_boleto_id] ?? 0;
-      for (let i = 0; i < qty; i++) {
-        asignacion.push({ tipo_boleto_id: t.tipo_boleto_id, total_online: t.total_online, tipo_boleto: t.tipo_boleto });
+    // Hacemos una copia profunda de las cantidades para descontarlas
+    const pendientes = { ...cantidades };
+    
+    // Asignamos un boleto a cada asiento seleccionado en orden
+    asientosSeleccionados.forEach(asiento => {
+      const options = tarifasByArea[asiento.area_code] || [];
+      // Buscamos un tipo de boleto para esa área que tenga cantidad > 0
+      const selectedTarifa = options.find(t => pendientes[t.tipo_boleto_id] > 0);
+      
+      if (selectedTarifa) {
+        pendientes[selectedTarifa.tipo_boleto_id]--;
+        asignacion.push({
+          tipo_boleto_id: selectedTarifa.tipo_boleto_id,
+          total_online: selectedTarifa.total_online,
+          tipo_boleto: selectedTarifa.tipo_boleto
+        });
       }
     });
+
     onConfirmar(asignacion);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-      <div className="bg-cine-bg border border-cine-line rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-cine-bg border border-cine-line rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden my-8">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-cine-line">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-cine-line sticky top-0 bg-cine-bg z-10">
           <h2 className="font-display text-xl tracking-wide">Selecciona tus boletos</h2>
           <button onClick={onCerrar} className="text-cine-slate hover:text-cine-cream transition-colors text-2xl leading-none">×</button>
         </div>
 
-        {/* Ticket types */}
-        <div className="px-6 py-4">
-          <p className="text-xs uppercase tracking-widest text-cine-slate mb-4 font-bold">Boletos</p>
-          <div className="space-y-3">
-            {tarifas.map(t => (
-              <div key={t.tipo_boleto_id} className="flex items-center justify-between bg-cine-bg-raised border border-cine-line rounded-xl px-4 py-3">
-                <div>
-                  <p className="text-cine-cream font-semibold text-sm">{t.tipo_boleto}</p>
-                  <p className="text-cine-gold font-mono text-sm">${t.total_online.toFixed(2)}</p>
+        {/* Ticket types agrupados por area_code */}
+        <div className="px-6 py-4 space-y-6">
+          {Object.entries(seatsByArea).map(([area_code, totalSeats]) => {
+            const options = tarifasByArea[area_code] || [];
+            if (options.length === 0) return null; // No hay tarifas para este asiento
+            
+            const areaName = options[0].tipo_boleto.replace("Admisión General ", "").replace("Admisión General", "Estándar") || "Estándar";
+
+            return (
+              <div key={area_code}>
+                <div className="flex justify-between items-center mb-4">
+                  <p className="text-xs uppercase tracking-widest text-cine-slate font-bold">
+                    Asientos {areaName} ({totalSeats})
+                  </p>
+                  <p className="text-xs text-cine-slate">
+                    Asignados: {getAssignedForArea(area_code)} / {totalSeats}
+                  </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setQty(t.tipo_boleto_id, -1)}
-                    disabled={(cantidades[t.tipo_boleto_id] ?? 0) === 0}
-                    className="w-8 h-8 rounded-full border border-cine-line text-cine-cream hover:border-cine-gold hover:text-cine-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-lg font-bold"
-                  >
-                    −
-                  </button>
-                  <span className="w-6 text-center font-mono text-cine-cream font-bold text-base">
-                    {cantidades[t.tipo_boleto_id] ?? 0}
-                  </span>
-                  <button
-                    onClick={() => setQty(t.tipo_boleto_id, 1)}
-                    disabled={totalAsignado >= totalAsientos}
-                    className="w-8 h-8 rounded-full bg-cine-gold text-cine-bg hover:bg-cine-gold/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-lg font-bold"
-                  >
-                    +
-                  </button>
+                
+                <div className="space-y-3">
+                  {options.map(t => (
+                    <div key={t.tipo_boleto_id} className="flex items-center justify-between bg-cine-bg-raised border border-cine-line rounded-xl px-4 py-3">
+                      <div>
+                        <p className="text-cine-cream font-semibold text-sm">{t.tipo_boleto}</p>
+                        <p className="text-cine-gold font-mono text-sm">${t.total_online.toFixed(2)}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setQty(area_code, t.tipo_boleto_id, -1)}
+                          disabled={(cantidades[t.tipo_boleto_id] ?? 0) === 0}
+                          className="w-8 h-8 rounded-full border border-cine-line text-cine-cream hover:border-cine-gold hover:text-cine-gold transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-lg font-bold"
+                        >
+                          −
+                        </button>
+                        <span className="w-6 text-center font-mono text-cine-cream font-bold text-base">
+                          {cantidades[t.tipo_boleto_id] ?? 0}
+                        </span>
+                        <button
+                          onClick={() => setQty(area_code, t.tipo_boleto_id, 1)}
+                          disabled={getAssignedForArea(area_code) >= totalSeats}
+                          className="w-8 h-8 rounded-full bg-cine-gold text-cine-bg hover:bg-cine-gold/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-lg font-bold"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-6 space-y-3">
+        <div className="px-6 pb-6 space-y-3 sticky bottom-0 bg-cine-bg border-t border-cine-line pt-4">
           <button
             onClick={handleConfirmar}
-            disabled={restante !== 0}
+            disabled={!isReady}
             className="w-full bg-[#e31837] hover:bg-[#c41530] disabled:opacity-40 disabled:cursor-not-allowed transition-colors rounded-xl py-3.5 font-bold tracking-wide text-white text-sm"
           >
             Continuar
           </button>
-          {restante !== 0 && (
+          {!isReady && (
             <p className="text-center text-xs text-cine-slate">
-              {restante > 0
-                ? `Falta(n) ${restante} boleto${restante > 1 ? "s" : ""} por seleccionar`
-                : `Tienes ${Math.abs(restante)} boleto${Math.abs(restante) > 1 ? "s" : ""} de más`}
+               Asegúrate de asignar la cantidad correcta de boletos para cada tipo de asiento.
             </p>
           )}
         </div>
@@ -296,7 +369,7 @@ export function SeatSelectionPage() {
       {showModal && tarifas.length > 0 && (
         <ModalBoletos
           tarifas={tarifas}
-          totalAsientos={preSeleccion.size}
+          asientosSeleccionados={Object.values(mapaData.mapa).flat().filter(a => preSeleccion.has((a as AsientoAPI).asiento_id)) as AsientoAPI[]}
           onConfirmar={handleConfirmarBoletos}
           onCerrar={() => setShowModal(false)}
         />

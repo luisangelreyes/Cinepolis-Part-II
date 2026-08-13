@@ -113,7 +113,12 @@ def get_asientos(funcion_id: int, db: Session):
     db.commit()
 
     asientos_raw = db.execute(text("""
-        SELECT asiento_id, fila, columna, tipo_asiento, estado FROM ASIENTO WHERE funcion_id = :fid ORDER BY fila, columna
+        SELECT a.asiento_id, a.fila, a.columna, a.tipo_asiento, a.estado, ap.area_category_code
+        FROM ASIENTO a
+        JOIN FUNCION f ON a.funcion_id = f.funcion_id
+        JOIN ASIENTO_PLANTILLA ap ON ap.sala_id = f.sala_id AND ap.fila = a.fila AND ap.columna = a.columna
+        WHERE a.funcion_id = :fid 
+        ORDER BY a.fila, a.columna
     """), {"fid": funcion_id}).fetchall()
 
     mapa_filas = {}
@@ -123,7 +128,7 @@ def get_asientos(funcion_id: int, db: Session):
         if fila not in mapa_filas: mapa_filas[fila] = []
         mapa_filas[fila].append({
             "asiento_id": a.asiento_id, "columna": a.columna, "etiqueta": f"{fila}{a.columna}",
-            "tipo": a.tipo_asiento, "estado": a.estado
+            "tipo": a.tipo_asiento, "estado": a.estado, "area_code": a.area_category_code
         })
         if a.estado == 'disponible': total_disponibles += 1
 
@@ -143,13 +148,79 @@ def get_asientos(funcion_id: int, db: Session):
 
 
 def get_precios(funcion_id: int, db: Session):
-    precios = db.execute(text("""
-        SELECT tb.tipo_boleto_id, tb.nombre AS tipo_boleto, pb.precio, pb.cargo_servicio_online
-        FROM FUNCION f JOIN SALA s ON f.sala_id = s.sala_id
-        JOIN PRECIO_BOLETO pb ON pb.complejo_id = s.complejo_id AND pb.formato_id = f.formato_id AND pb.tipo_sala = s.tipo_sala
-        JOIN TIPO_BOLETO tb ON pb.tipo_boleto_id = tb.tipo_boleto_id WHERE f.funcion_id = :fid ORDER BY pb.precio DESC
+    # 1. Obtener las áreas físicas (areaCategoryCode) que existen en la sala de esta función.
+    #    Si area_category_code es NULL en ASIENTO_PLANTILLA, se trata como área genérica.
+    areas_sala = db.execute(text("""
+        SELECT DISTINCT ap.area_category_code
+        FROM FUNCION f
+        JOIN SALA s ON f.sala_id = s.sala_id
+        JOIN ASIENTO_PLANTILLA ap ON ap.sala_id = s.sala_id
+        WHERE f.funcion_id = :fid
+          AND ap.area_category_code IS NOT NULL
     """), {"fid": funcion_id}).fetchall()
-    
-    if not precios: raise HTTPException(status_code=404, detail="No se encontraron tarifas configuradas para esta función.")
-        
-    return {"funcion_id": funcion_id, "tarifas": [{"tipo_boleto_id": p.tipo_boleto_id, "tipo_boleto": p.tipo_boleto, "precio": float(p.precio), "cargo_servicio": float(p.cargo_servicio_online), "total_online": float(p.precio + p.cargo_servicio_online)} for p in precios]}
+
+    codigos_area = {row[0] for row in areas_sala if row[0]}
+
+    # 2. Traer los precios que coincidan con alguna de las áreas de la sala,
+    #    O cuyo area_category_code sea NULL (boletos base que aplican a toda la sala).
+    #
+    #    Si la sala aún no tiene datos de ASIENTO_PLANTILLA (codigos_area vacío),
+    #    se hace fallback a la consulta original por tipo_sala para no romper nada.
+    if codigos_area:
+        # Construir la lista de parámetros de forma segura
+        area_params = {f"a{i}": code for i, code in enumerate(codigos_area)}
+        area_placeholders = ", ".join(f":a{i}" for i in range(len(codigos_area)))
+
+        precios = db.execute(text(f"""
+            SELECT DISTINCT ON (tb.tipo_boleto_id, pb.area_category_code)
+                tb.tipo_boleto_id,
+                tb.nombre AS tipo_boleto,
+                pb.precio,
+                pb.cargo_servicio_online,
+                pb.area_category_code
+            FROM FUNCION f
+            JOIN SALA s ON f.sala_id = s.sala_id
+            JOIN PRECIO_BOLETO pb
+                ON pb.complejo_id = s.complejo_id
+               AND pb.formato_id  = f.formato_id
+               AND pb.tipo_sala   = s.tipo_sala
+               AND (pb.area_category_code IN ({area_placeholders})
+                    OR pb.area_category_code IS NULL)
+            JOIN TIPO_BOLETO tb ON pb.tipo_boleto_id = tb.tipo_boleto_id
+            WHERE f.funcion_id = :fid
+            ORDER BY tb.tipo_boleto_id, pb.area_category_code NULLS LAST, pb.precio DESC
+        """), {"fid": funcion_id, **area_params}).fetchall()
+    else:
+        # Fallback: la sala todavía no tiene mapa de asientos → comportamiento anterior
+        precios = db.execute(text("""
+            SELECT tb.tipo_boleto_id, tb.nombre AS tipo_boleto,
+                   pb.precio, pb.cargo_servicio_online, pb.area_category_code
+            FROM FUNCION f
+            JOIN SALA s ON f.sala_id = s.sala_id
+            JOIN PRECIO_BOLETO pb
+                ON pb.complejo_id = s.complejo_id
+               AND pb.formato_id  = f.formato_id
+               AND pb.tipo_sala   = s.tipo_sala
+            JOIN TIPO_BOLETO tb ON pb.tipo_boleto_id = tb.tipo_boleto_id
+            WHERE f.funcion_id = :fid
+            ORDER BY pb.precio DESC
+        """), {"fid": funcion_id}).fetchall()
+
+    if not precios:
+        raise HTTPException(status_code=404, detail="No se encontraron tarifas configuradas para esta función.")
+
+    return {
+        "funcion_id": funcion_id,
+        "tarifas": [
+            {
+                "tipo_boleto_id":   p.tipo_boleto_id,
+                "tipo_boleto":      p.tipo_boleto,
+                "precio":           float(p.precio),
+                "cargo_servicio":   float(p.cargo_servicio_online),
+                "total_online":     float(p.precio + p.cargo_servicio_online),
+                "area_code":        p.area_category_code,
+            }
+            for p in precios
+        ],
+    }
+

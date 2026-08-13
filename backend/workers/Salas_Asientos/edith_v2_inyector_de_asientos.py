@@ -104,6 +104,8 @@ query Seats($countryId: String!, $sessionId: String!, $cinemaVistaId: String!, $
 TIPO_ASIENTO_MAP = {
     "standard":   "Tradicional",
     "Standard":   "Tradicional",
+    "normal":     "Tradicional",
+    "Normal":     "Tradicional",
     "vip":        "VIP",
     "VIP":        "VIP",
     "imax":       "IMAX",
@@ -115,11 +117,22 @@ TIPO_ASIENTO_MAP = {
     "special":    "Especial",
     "Special":    "Especial",
     "companion":  "Especial",
+    "camastro":   "Camastro",
+    "Camastro":   "Camastro",
+    "puff":       "Puff",
+    "Puff":       "Puff",
+    "puff plus":  "Puff Plus",
+    "Puff Plus":  "Puff Plus",
+    "puff super": "Puff Super",
+    "Puff Super": "Puff Super",
 }
 
-
 def mapear_tipo(tipo_api: str) -> str:
-    return TIPO_ASIENTO_MAP.get(tipo_api, "Tradicional")
+    # Si no está en el mapa, devolvemos el valor original (capitalizado) en lugar de "Tradicional"
+    # para no perder la información de tipos de butacas especiales (Puff, Camastro, etc.)
+    if not tipo_api:
+        return "Tradicional"
+    return TIPO_ASIENTO_MAP.get(tipo_api, str(tipo_api).title())
 
 
 # ===========================================================================
@@ -312,7 +325,8 @@ def parsear_areas(areas: list, complejo_slug: str, sala_numero: str) -> list:
     butacas = []
 
     for area in areas:
-        tipo_area = area.get("description") or area.get("areaCategoryCode") or ""
+        area_code = area.get("areaCategoryCode") or ""
+        tipo_area = area.get("description") or area_code or ""
 
         for fila_datos in area.get("rows", []):
             letra_fila = fila_datos.get("physicalName", "")
@@ -327,19 +341,20 @@ def parsear_areas(areas: list, complejo_slug: str, sala_numero: str) -> list:
                 tipo_raw = asiento.get("seatStyle", tipo_area)
                 pos      = asiento.get("position", {})
                 col_idx  = pos.get("columnIndex")
-                
-                # La API devuelve columnIndex empezando en 0. 
+
+                # La API devuelve columnIndex empezando en 0.
                 # Sumamos 1 a TODAS para pasarlo a base 1 y evitar colisiones
                 # en la base de datos (que tiene restricción columna > 0).
                 col_idx = int(col_idx) + 1 if col_idx is not None else 1
 
                 butacas.append({
-                    "complejo_slug": complejo_slug,
-                    "sala_numero":   sala_numero,
-                    "fila":          letra_fila,
-                    "columna":       col_idx,
-                    "id_silla_api":  id_silla,
-                    "tipo_asiento":  mapear_tipo(tipo_raw),
+                    "complejo_slug":      complejo_slug,
+                    "sala_numero":        sala_numero,
+                    "fila":               letra_fila,
+                    "columna":            col_idx,
+                    "id_silla_api":       id_silla,
+                    "tipo_asiento":       mapear_tipo(tipo_raw),
+                    "area_category_code": area_code,  # ← nuevo
                 })
 
     return butacas
@@ -360,25 +375,24 @@ def guardar_sql(butacas: list, ruta: str):
     ]
 
     for b in butacas:
-        slug     = b["complejo_slug"].replace("'", "''")
-        sala_num = str(b["sala_numero"]).replace("'", "''")
-        fila     = b["fila"].replace("'", "''")
-        col      = b["columna"]
-        tipo     = b["tipo_asiento"].replace("'", "''")
-        api_id   = b["id_silla_api"].replace("'", "''")
+        slug      = b["complejo_slug"].replace("'", "''")
+        sala_num  = str(b["sala_numero"]).replace("'", "''")
+        fila      = b["fila"].replace("'", "''")
+        col       = b["columna"]
+        tipo      = b["tipo_asiento"].replace("'", "''")
+        api_id    = b["id_silla_api"].replace("'", "''")
+        area_code = (b.get("area_category_code") or "").replace("'", "''")
+        area_sql  = f"'{area_code}'" if area_code else "NULL"
 
         lines.append(
-            f"INSERT INTO ASIENTO_PLANTILLA (asiento_api_id, sala_id, fila, columna, tipo_asiento)\n"
-            f"SELECT '{api_id}', s.sala_id, '{fila}', {col}, '{tipo}'\n"
+            f"INSERT INTO ASIENTO_PLANTILLA (asiento_api_id, sala_id, fila, columna, tipo_asiento, area_category_code)\n"
+            f"SELECT '{api_id}', s.sala_id, '{fila}', {col}, '{tipo}', {area_sql}\n"
             f"FROM SALA s\n"
             f"JOIN COMPLEJO c ON s.complejo_id = c.complejo_id\n"
             f"WHERE c.slug = '{slug}' AND s.numero_sala = {sala_num}\n"
-            f"  AND NOT EXISTS (\n"
-            f"    SELECT 1 FROM ASIENTO_PLANTILLA ap2\n"
-            f"    WHERE ap2.sala_id = s.sala_id\n"
-            f"      AND ap2.fila = '{fila}'\n"
-            f"      AND ap2.columna = {col}\n"
-            f"  );\n"
+            f"ON CONFLICT (sala_id, fila, columna) DO UPDATE\n"
+            f"  SET tipo_asiento = EXCLUDED.tipo_asiento,\n"
+            f"      area_category_code = EXCLUDED.area_category_code;\n"
         )
 
     lines.append("COMMIT;")

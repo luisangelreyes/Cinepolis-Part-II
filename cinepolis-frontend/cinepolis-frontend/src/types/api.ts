@@ -35,6 +35,7 @@ export interface AsientoAPI {
   etiqueta: string;
   tipo: string;
   estado: EstadoAsiento;
+  area_code: string;
 }
 
 export interface MapaAsientosResponse {
@@ -57,6 +58,7 @@ export interface TarifaBoleto {
   precio: number;
   cargo_servicio: number;
   total_online: number;
+  area_code: string;
 }
 
 export interface PreciosFuncionResponse {
