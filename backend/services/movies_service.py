@@ -206,21 +206,86 @@ def get_precios(funcion_id: int, db: Session):
             ORDER BY pb.precio DESC
         """), {"fid": funcion_id}).fetchall()
 
+    # Fallback 1: misma sala pero cualquier formato (ej. VIP 3D → usar VIP 2D si no hay VIP 3D)
+    if not precios:
+        precios = db.execute(text("""
+            SELECT DISTINCT ON (tb.tipo_boleto_id)
+                tb.tipo_boleto_id,
+                tb.nombre AS tipo_boleto,
+                pb.precio,
+                pb.cargo_servicio_online,
+                pb.area_category_code
+            FROM FUNCION f
+            JOIN SALA s ON f.sala_id = s.sala_id
+            JOIN PRECIO_BOLETO pb
+                ON pb.complejo_id = s.complejo_id
+               AND pb.tipo_sala   = s.tipo_sala
+            JOIN TIPO_BOLETO tb ON pb.tipo_boleto_id = tb.tipo_boleto_id
+            WHERE f.funcion_id = :fid
+            ORDER BY tb.tipo_boleto_id, pb.precio DESC
+        """), {"fid": funcion_id}).fetchall()
+
+    # Fallback 2: mismo complejo y formato, cualquier tipo de sala
+    if not precios:
+        precios = db.execute(text("""
+            SELECT DISTINCT ON (tb.tipo_boleto_id)
+                tb.tipo_boleto_id,
+                tb.nombre AS tipo_boleto,
+                pb.precio,
+                pb.cargo_servicio_online,
+                pb.area_category_code
+            FROM FUNCION f
+            JOIN SALA s ON f.sala_id = s.sala_id
+            JOIN PRECIO_BOLETO pb
+                ON pb.complejo_id = s.complejo_id
+               AND pb.formato_id  = f.formato_id
+            JOIN TIPO_BOLETO tb ON pb.tipo_boleto_id = tb.tipo_boleto_id
+            WHERE f.funcion_id = :fid
+            ORDER BY tb.tipo_boleto_id, pb.precio DESC
+        """), {"fid": funcion_id}).fetchall()
+
+    # Fallback 3: cualquier precio del complejo
+    if not precios:
+        precios = db.execute(text("""
+            SELECT DISTINCT ON (tb.tipo_boleto_id)
+                tb.tipo_boleto_id,
+                tb.nombre AS tipo_boleto,
+                pb.precio,
+                pb.cargo_servicio_online,
+                pb.area_category_code
+            FROM FUNCION f
+            JOIN SALA s ON f.sala_id = s.sala_id
+            JOIN PRECIO_BOLETO pb ON pb.complejo_id = s.complejo_id
+            JOIN TIPO_BOLETO tb ON pb.tipo_boleto_id = tb.tipo_boleto_id
+            WHERE f.funcion_id = :fid
+            ORDER BY tb.tipo_boleto_id, pb.precio DESC
+        """), {"fid": funcion_id}).fetchall()
+
     if not precios:
         raise HTTPException(status_code=404, detail="No se encontraron tarifas configuradas para esta función.")
 
+    # Si la sala solo tiene 1 área (o 0), podemos forzar que todos los precios tengan ese área (o null).
+    # Esto evita que si usamos un fallback de precios (ej. de otra sala), los códigos de área 
+    # no coincidan con los del frontend, dejando al usuario sin boletos seleccionables.
+    default_area = list(codigos_area)[0] if len(codigos_area) == 1 else None
+    force_area = len(codigos_area) <= 1
+
+    tarifas = []
+    for p in precios:
+        final_area = p.area_category_code
+        if force_area:
+            final_area = default_area
+            
+        tarifas.append({
+            "tipo_boleto_id":   p.tipo_boleto_id,
+            "tipo_boleto":      p.tipo_boleto,
+            "precio":           float(p.precio),
+            "cargo_servicio":   float(p.cargo_servicio_online),
+            "total_online":     float(p.precio + p.cargo_servicio_online),
+            "area_code":        final_area,
+        })
+
     return {
         "funcion_id": funcion_id,
-        "tarifas": [
-            {
-                "tipo_boleto_id":   p.tipo_boleto_id,
-                "tipo_boleto":      p.tipo_boleto,
-                "precio":           float(p.precio),
-                "cargo_servicio":   float(p.cargo_servicio_online),
-                "total_online":     float(p.precio + p.cargo_servicio_online),
-                "area_code":        p.area_category_code,
-            }
-            for p in precios
-        ],
+        "tarifas": tarifas,
     }
-

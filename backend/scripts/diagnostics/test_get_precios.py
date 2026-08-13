@@ -19,7 +19,7 @@ def test_endpoint(funcion_id):
         db.close()
 
 if __name__ == "__main__":
-    from check_query import engine
+    from scripts.db_utils.check_query import engine
     from sqlalchemy import text
     with engine.connect() as conn:
         # Check an normal function

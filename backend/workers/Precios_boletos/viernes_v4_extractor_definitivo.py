@@ -1,24 +1,20 @@
 """
 =============================================================================
-Viernes V4.0 — EXTRACTOR DE PRECIOS CON GARANTÍA DE PRECIO CORRECTO
+Viernes V4.1 — EXTRACTOR DE PRECIOS (PRECIOS UNIFORMES)
 =============================================================================
-Mejora clave sobre V3:
+Los precios de Cinépolis Veracruz NO varían por horario ni día de semana,
+por lo que no hay que preocuparse por matinées ni descuentos.
 
- PROBLEMA V3: tomaba solo la PRIMERA sesión por (cine, formato, experiencia).
-              Si esa sesión era Matinée o Miércoles de descuento, el precio
-              incorrecto (más bajo) quedaba guardado para todas las funciones.
-
- SOLUCIÓN V4: muestrea hasta MAX_MUESTRAS sesiones por combinación y se
-              queda con el precio MÁXIMO observado. Los precios con descuento
-              son siempre menores al precio regular, por lo que el máximo
-              siempre apunta al precio de taquilla real.
+ V4.1: Toma UNA sola sesión representativa por combinación (cine, formato,
+       experiencia). Si no hay sesiones futuras disponibles (ej. película
+       que solo tiene funciones próximas a comenzar), se hace un segundo
+       intento tomando cualquier sesión del JSON sin restricción de tiempo.
 
 Combina:
  1. Lectura local del JSON de cartelera (para obtener session_ids reales)
  2. Playwright (solo para robar el x-apikey fresco)
  3. Ingeniería Inversa API Cinépolis (Manejo de Centavos y Costos Ocultos 3D)
-=============================================================================
-"""
+============================================================================="""
 
 import time
 import random
@@ -41,9 +37,8 @@ except ImportError:
 URL_TICKET = "https://api-g.cinepolis.com/v1/ticket/graphql"
 API_KEY_BACKUP = "lQM6Mkvri1iHksKKCfpAiwGXq0YUZA7Nn6XAXRPr4i13LwXo"
 
-# Cuántas sesiones distintas muestrear por combinación (cine, formato, experiencia)
-# Más muestras = mayor probabilidad de capturar el precio real, pero más llamadas a API.
-MAX_MUESTRAS = 3
+# UNA sola sesión por combinación es suficiente (precios uniformes en la zona).
+MAX_MUESTRAS = 1
 
 # MAPEO CORRECTO: slug (BD) → cinema_vista_id (API Cinépolis) → nombre
 # Usamos slugs para consultar el complejo_id dinámicamente desde la BD.
@@ -121,14 +116,18 @@ def cargar_sesiones_desde_json() -> dict:
         return {}
 
     ahora = datetime.now()
-    margen = timedelta(hours=2)  # Solo sesiones que comiencen en 2+ horas
     sesiones_totales = 0
     sesiones_descartadas = 0
 
-    # muestras: {(vista_id, fmt, exp): [session_id_1, session_id_2, ...]}
-    muestras: dict[tuple, list[str]] = {}
+    funciones_raw = data.get("funciones", [])
 
-    for fun in data.get("funciones", []):
+    # Primera pasada: solo sesiones que aún no han comenzado
+    # muestras: {(vista_id, fmt, exp): [session_id, ...]}
+    muestras: dict[tuple, list[str]] = {}
+    # Guardamos todas las funciones por clave como fallback
+    todas_funciones: dict[tuple, list[str]] = {}
+
+    for fun in funciones_raw:
         vid = fun.get("cinema_vista_id")
         sid = fun.get("session_id")
         fmt = fun.get("formato", "2D")
@@ -139,35 +138,52 @@ def cargar_sesiones_desde_json() -> dict:
             continue
 
         sesiones_totales += 1
+        # Clave ahora incluye tipo_sala del JSON de cartelera para evitar el bug
+        # de complejos VIP con salas mixtas (Tradicional + VIP en mismo complejo).
+        tipo_sala_json = fun.get("tipo_sala", "")  # campo del JSON de Matilde
+        clave = (vid, fmt, exp, tipo_sala_json)
 
-        # FILTRO CLAVE: descartar sesiones pasadas o inminentes.
-        # La API de Cinépolis devuelve precios inválidos (Evento Especial, $0, etc.)
-        # para sesiones cuyo horario ya transcurrió.
+        # Fallback: guardar TODAS las sesiones sin restricción de tiempo
+        todas_funciones.setdefault(clave, [])
+        if sid not in todas_funciones[clave] and len(todas_funciones[clave]) < MAX_MUESTRAS:
+            todas_funciones[clave].append(sid)
+
+        # Primera pasada: solo sesiones futuras (no empezadas todavía)
         if dt_str:
             try:
                 dt_fun = datetime.fromisoformat(dt_str.replace("Z", ""))
-                if dt_fun < ahora + margen:
+                if dt_fun < ahora:
                     sesiones_descartadas += 1
-                    continue
+                    continue  # Sesión ya empezó → ignorar en primera pasada
             except ValueError:
-                pass  # Fecha mal formateada → la incluimos de todas formas
+                pass  # Fecha mal formateada → incluir de todas formas
 
-        clave = (vid, fmt, exp)
         lista = muestras.setdefault(clave, [])
-
         if sid not in lista and len(lista) < MAX_MUESTRAS:
             lista.append(sid)
 
+    # Segunda pasada (fallback): para combinaciones sin sesiones futuras,
+    # usar la primera sesión disponible sin restricción de tiempo.
+    # Esto sucede cuando el script corre tarde y las funciones de hoy ya empezaron.
+    sin_sesiones_futuras = 0
+    for clave, todas in todas_funciones.items():
+        if clave not in muestras or not muestras[clave]:
+            if todas:
+                muestras[clave] = [todas[0]]  # Tomar la primera disponible
+                sin_sesiones_futuras += 1
+                log.debug(f"  ↩ Fallback para {clave}: usando sesión próxima {todas[0]}")
+
     total_validas = sum(len(v) for v in muestras.values())
     log.info(
-        f"✓ {len(muestras)} combinaciones únicas | {total_validas} sesiones válidas "
-        f"de {sesiones_totales} totales ({sesiones_descartadas} descartadas por expiradas/inminentes)."
+        f"✓ {len(muestras)} combinaciones únicas | {total_validas} sesiones "
+        f"de {sesiones_totales} totales ({sesiones_descartadas} ya iniciadas descartadas, "
+        f"{sin_sesiones_futuras} usaron fallback de sesión próxima)."
     )
 
     if not muestras:
         log.error(
-            "❌ NINGUNA sesión futura en el JSON. "
-            "El JSON de cartelera está desactualizado. "
+            "NINGUNA sesion futura en el JSON. "
+            "El JSON de cartelera esta desactualizado. "
             "Ejecuta Matilde V6 primero para regenerarlo con funciones futuras."
         )
 
@@ -227,9 +243,13 @@ query Tickets($countryId: String!, $sessionId: String!, $cinemaVistaId: String!)
 }
 """
 
-def parsear_tipo_desde_api(ticket: dict, fallback_exp: str, fallback_fmt: str, vista_id: str) -> tuple[int, str]:
+def parsear_tipo_desde_api(ticket: dict, fallback_exp: str, fallback_fmt: str, vista_id: str, tipo_sala_bd: str = "") -> tuple[int, str]:
     """Extrae (formato_id, tipo_sala) analizando los nombres y descriptions.
-    
+
+    Si se proporciona `tipo_sala_bd` (leído del JSON de cartelera que ya tiene el
+    tipo de sala correcto de la BD), se usa directamente para tipo_sala en lugar
+    de intentar inferirlo desde el vista_id o la experiencia.
+
     Mapeo de experiencias del JSON de Cinépolis:
       'Tradicional' → Tradicional
       'XE'          → MACRO XE  (solo en complejos de la whitelist)
@@ -238,7 +258,6 @@ def parsear_tipo_desde_api(ticket: dict, fallback_exp: str, fallback_fmt: str, v
       'IMAX'        → IMAX
       'SP'          → ignorar   (Sala Privada / Evento Especial — sin tarifa estándar)
     """
-    exp_upper = fallback_exp.upper()
     desc = ticket.get("description", "").upper()
 
     # Formato — se detecta por la descripción del boleto que devuelve la API
@@ -246,22 +265,29 @@ def parsear_tipo_desde_api(ticket: dict, fallback_exp: str, fallback_fmt: str, v
     elif "3D" in desc:   formato_id = 12
     else:                formato_id = FORMATO_MAP.get(fallback_fmt.lower(), 11)
 
-    # Tipo sala — el orden de evaluación importa; VIP tiene prioridad absoluta
-    if vista_id in COMPLEJOS_VIP:
+    # Si el JSON de cartelera ya tiene el tipo_sala correcto, usarlo directamente.
+    # Esto evita el bug donde complejos VIP con salas mixtas se clasificaban mal.
+    if tipo_sala_bd:
+        return formato_id, tipo_sala_bd
+
+    # Fallback: inferir tipo_sala desde vista_id y experiencia (comportamiento legacy)
+    exp_upper = fallback_exp.upper()
+    if "VIP" in exp_upper or "VIP" in desc:
         tipo_sala = "VIP"
     elif exp_upper in ("XE", "MACRO XE") or "MACRO" in exp_upper:
         if vista_id in COMPLEJOS_CON_MACRO_XE:
             tipo_sala = "MACRO XE"
         else:
             log.warning(
-                f"  ! Complejo {vista_id} reportó experiencia XE/MACRO XE pero no está "
+                f"  ! Complejo {vista_id} reporto experiencia XE/MACRO XE pero no esta "
                 f"en COMPLEJOS_CON_MACRO_XE — degradando a Tradicional."
             )
             tipo_sala = "Tradicional"
-    elif exp_upper == "4DX" or "4D" in exp_upper:  tipo_sala = "4DX"
-    elif exp_upper == "SJ" or "JUNIOR" in exp_upper: tipo_sala = "Junior"  # SJ = Sala Junior
-    elif "IMAX" in exp_upper:                      tipo_sala = "IMAX"
-    else:                                          tipo_sala = "Tradicional"
+    elif exp_upper == "4DX" or "4D" in exp_upper:   tipo_sala = "4DX"
+    elif exp_upper == "SJ" or "JUNIOR" in exp_upper: tipo_sala = "Junior"
+    elif "IMAX" in exp_upper:                        tipo_sala = "IMAX"
+    elif vista_id in COMPLEJOS_VIP:                  tipo_sala = "VIP"  # Fallback final para cines 100% VIP
+    else:                                            tipo_sala = "Tradicional"
 
     return formato_id, tipo_sala
 
@@ -372,8 +398,8 @@ def main():
                 log.warning("  ! Sin sesiones en JSON para este complejo.")
                 continue
 
-            for (vid, fmt, exp), lista_sessions in sesiones_cine.items():
-                log.info(f"  · Combinación ({fmt}/{exp}): {len(lista_sessions)} sesiones a consultar.")
+            for (vid, fmt, exp, tipo_sala_json), lista_sessions in sesiones_cine.items():
+                log.info(f"  · Combinacion ({fmt}/{exp}/{tipo_sala_json or 'desconocido'}): {len(lista_sessions)} sesiones.")
 
                 for session_id in lista_sessions:
                     time.sleep(random.uniform(1.2, 2.5))
@@ -396,7 +422,9 @@ def main():
                                 continue
 
                             tipo_boleto_id = obtener_tipo_boleto_id(conn, description, mapa_boletos)
-                            formato_id, tipo_sala = parsear_tipo_desde_api(t, exp, fmt, vista_id)
+                            formato_id, tipo_sala = parsear_tipo_desde_api(
+                                t, exp, fmt, vista_id, tipo_sala_bd=tipo_sala_json
+                            )
 
                             precio_base = t.get("priceInCents", 0) / 100.0
                             cargo_srv   = t.get("bookingFee", 0) / 100.0
@@ -424,28 +452,20 @@ def main():
                                 f"Area:{area_code} | ${precio_base:.2f} (sesión {session_id})"
                             )
 
-    # ── POST-PROCESAMIENTO: seleccionar precio MÁXIMO por combinación ──────────
+    # ── POST-PROCESAMIENTO: usar el precio de la única muestra ──────────────────
     todos_registros = []
     for (complejo_id, formato_id, tipo_boleto_id, tipo_sala, area_code), datos in precios_acumulados.items():
         precios = datos["precios"]
-        precio_max  = max(precios)
-        precio_min  = min(precios)
+        precio_final = precios[0]  # Siempre hay solo 1 muestra (MAX_MUESTRAS=1)
         precio_cargo = datos["cargo"]
-
-        if len(precios) > 1 and precio_max != precio_min:
-            log.info(
-                f"  [DESCUENTO DETECTADO] Complejo {complejo_id}, Fmt {formato_id}, "
-                f"Tipo {tipo_sala}, Area {area_code}: precios observados {precios} → usando máximo ${precio_max:.2f} "
-                f"(mínimo descartado: ${precio_min:.2f})"
-            )
 
         todos_registros.append({
             "complejo_id":        complejo_id,
             "formato_id":         formato_id,
             "tipo_boleto_id":     tipo_boleto_id,
             "tipo_sala":          tipo_sala,
-            "area_category_code": area_code,  # ← nuevo
-            "precio":             precio_max,
+            "area_category_code": area_code,
+            "precio":             precio_final,
             "cargo":              precio_cargo,
             "n_muestras":         len(precios),
         })
