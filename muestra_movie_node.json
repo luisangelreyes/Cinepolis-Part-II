@@ -1,22 +1,21 @@
 {
-  "id": "spider-man-un-nuevo-dia",
+  "id": "stray-kids-world-tour-run-it-live-viewing",
   "type": "",
   "countryId": "MX",
-  "name": "Spider-Man: Un Nuevo Día",
-  "originalName": "Spider-Man: Brand New Day",
-  "distributor": "Sony",
-  "rating": "B",
-  "ratingDescription": "Para adolescentes de 12 años en adelante.\nLa narrativa puede ser compleja. Presenta cierto grado de violencia, no extrema, por motivos específicos y no vinculada con lo sexual, poniendo en claro sus consecuencias. Los desnudos son breves y no detallados y las escenas sexuales sólo sugeridas. Se puede tratar el tema de las adicciones y las drogas pero sin exhibir su consumo. La violencia verbal no puede ser extrema.",
-  "position": "1",
+  "name": "Stray Kids World Tour <RUN IT> LIVE VIEWING",
+  "originalName": "Stray Kids World Tour <RUN IT> LIVE VIEWING",
+  "distributor": "+QueCine",
+  "rating": "TBC",
+  "ratingDescription": " ",
+  "position": "98",
   "genre": [
-    "AVENTURA",
-    "ACCIÓN"
+    "CONCIERTO"
   ],
-  "synopsis": "Comienza un nuevo día para Peter Parker. Luchar contra el crimen a tiempo completo como Spider-Man en un mundo que no lo recuerda, sumado a la presión de ver a sus viejos amigos seguir adelante sin él, provoca un cambio en Peter que quizás no pueda controlar. Pero esa transformación podría ser lo único que detenga una nueva y aterradora amenaza para la ciudad y sus seres queridos: un poderoso villano que ni siquiera pueden ver. El mundo puede haber olvidado a Peter Parker, pero él no los ha olvidado a ellos.",
-  "length": "145 min",
+  "synopsis": "Por primera vez, Stray Kids presenta una transmisión especial en vivo de «Stray Kids World Tour » desde el Tokyo Dome en cines de todo el mundo. Fiel al título de la gira,  refleja el impulso del grupo por adentrarse en mundos más grandes y subir a escenarios más audaces. Los ocho miembros (Bang Chan, Lee Know, Changbin, Hyunjin, HAN, Felix, Seungmin e I.N) desatan una energía imparable a través de coreografías explosivas y voces potentes, llevando la experiencia en vivo a su punto más álgido. Su presentación empieza con «Hall of Fame», una canción que expresa la ambición de Stray Kids de escribir su propia historia, trazando su crecimiento musical desde el principio hasta donde están ahora. La producción se enriquece aún más con montajes escénicos dinámicos, toques de espectáculos tradicionales coreanos y una iluminación láser espectacular, todo diseñado para que el público —tanto en el estadio como en el cine— se ponga de pie, cante, baile y celebre junto con los artistas. Grabado en vivo desde Tokio y transmitido a cines de todo el mundo, este evento de proyección en vivo te permite a ti, como parte de STAY, disfrutar de la magnitud, el espectáculo y la energía pura del show en vivo de Stray Kids —todos juntos, en la pantalla grande.",
+  "length": "195 min",
   "availableForSale": true,
   "alerts": [],
-  "releaseDate": "2026-07-29T06:00",
+  "releaseDate": "2026-11-07T06:00",
   "languages": [
     "es",
     "en"
@@ -24,88 +23,70 @@
   "formats": [
     "2D"
   ],
-  "tags": [],
+  "tags": [
+    {
+      "name": "Preventa",
+      "resource": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Tags/Preventa/Es/Preventa.png",
+      "__typename": "TagsInfo"
+    }
+  ],
   "media": [
     {
-      "resource": "resource.jpg",
-      "type": "image",
-      "code": "movie_card",
-      "sizes": {
-        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_900x900_3/",
-        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_900x900_3/",
-        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_900x900_3/",
-        "__typename": "SizeInfo"
-      },
-      "__typename": "MediaInfo"
-    },
-    {
-      "resource": "resource.jpg",
-      "type": "image",
-      "code": "header_purchase_flow",
-      "sizes": {
-        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x502_1/",
-        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x502_1/",
-        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x502_1/",
-        "__typename": "SizeInfo"
-      },
-      "__typename": "MediaInfo"
-    },
-    {
-      "resource": "resource.jpg",
+      "resource": "",
       "type": "image",
       "code": "poster",
       "sizes": {
-        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_720x1022_2/",
-        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_107x160_5/",
-        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/80x80_53/",
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_720x1022_copia.jpg",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/Poster_WEB_Desktop_107x160px_45__2.jpg",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_80x80_1.jpg",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
     },
     {
-      "resource": "resource.jpg",
+      "resource": "",
+      "type": "image",
+      "code": "movie_card",
+      "sizes": {
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_900x900.jpg",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_900x900.jpg",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_900x900.jpg",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "",
       "type": "image",
       "code": "header_movie_detail",
       "sizes": {
-        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x900_5/",
-        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x900_5/",
-        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_1440x900_5/",
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x900_2.jpg",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x900_2.jpg",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x900_2.jpg",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
     },
     {
-      "resource": "resource.mp4",
+      "resource": "",
+      "type": "image",
+      "code": "header_purchase_flow",
+      "sizes": {
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x502.jpg",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x502.jpg",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x502.jpg",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "",
       "type": "video",
       "code": "trailer_mp4",
       "sizes": {
-        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/6a19e4cd4cc01spidermanbrandnewday/",
-        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/6a19e4cd4cc01spidermanbrandnewday/",
-        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/6a19e4cd4cc01spidermanbrandnewday/",
-        "__typename": "SizeInfo"
-      },
-      "__typename": "MediaInfo"
-    },
-    {
-      "resource": "resource.jpg",
-      "type": "image",
-      "code": "carousel",
-      "sizes": {
-        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_1/",
-        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_1/",
-        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_1/",
-        "__typename": "SizeInfo"
-      },
-      "__typename": "MediaInfo"
-    },
-    {
-      "resource": "resource.jpg",
-      "type": "image",
-      "code": "carousel",
-      "sizes": {
-        "large": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_2/",
-        "medium": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_2/",
-        "small": "/pimcore/19229/assets/Mexico/Tickets/Movies/SpiderManUnNuevoDia/Es/SMBND_STILL_767x496_2/",
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/6ad112c94c215-Stray_Kids_World_Tour_30_Trailer_SPANISH_W8_1366x770.mp4",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/6ad112c94c215-Stray_Kids_World_Tour_30_Trailer_SPANISH_W8_1366x770.mp4",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/6ad112c94c215-Stray_Kids_World_Tour_30_Trailer_SPANISH_W8_1366x770.mp4",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -114,32 +95,14 @@
   "cities": [],
   "cinemas": [],
   "categories": [
-    "now-playing"
+    "pre-sale",
+    "now-playing",
+    "coming-soon"
   ],
   "experiences": [
     {
-      "icon": "",
+      "icon": "https://pimcore-content.cinepolis.com/assets/Master_Data/Experiences/Tradicional/Es/TRADICIONAL_11.svg",
       "name": "Tradicional",
-      "__typename": "ResourceStatic"
-    },
-    {
-      "icon": "/resources/mx/icons/experiences/4DX.svg",
-      "name": "4DX",
-      "__typename": "ResourceStatic"
-    },
-    {
-      "icon": "/resources/mx/icons/experiences/XE.svg",
-      "name": "XE",
-      "__typename": "ResourceStatic"
-    },
-    {
-      "icon": "/resources/mx/icons/experiences/PLUUS.svg",
-      "name": "SP",
-      "__typename": "ResourceStatic"
-    },
-    {
-      "icon": "/resources/mx/icons/experiences/3D.svg",
-      "name": "3D",
       "__typename": "ResourceStatic"
     }
   ],

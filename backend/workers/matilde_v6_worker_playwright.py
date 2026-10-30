@@ -112,6 +112,34 @@ query Billboard($countryId: String!, $movieId: String!, $cinemas: String!, $time
 }
 """
 
+# Query GraphQL para obtener catalogo de peliculas CON media (poster, banner, trailer)
+GRAPHQL_QUERY_MOVIES_MEDIA = """
+query Movies($countryId: String!) {
+  movies(countryId: $countryId) {
+    edges {
+      node {
+        id
+        name
+        synopsis
+        rating
+        genre
+        length
+        media {
+          resource
+          type
+          code
+          sizes {
+            large
+            medium
+            small
+          }
+        }
+      }
+    }
+  }
+}
+"""
+
 # User-agents para rotacion en reintentos
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -157,8 +185,9 @@ class MatildeExtractorV7:
             return None
         for code in codes:
             for item in media_list:
-                if isinstance(item, dict) and item.get("code") == code and item.get("type") == tipo:
-                    return item
+                if isinstance(item, dict) and item.get("code") == code:
+                    if not tipo or item.get("type") == tipo:
+                        return item
         return None
 
     def _url_desde_media(self, item: dict) -> str:
@@ -166,13 +195,34 @@ class MatildeExtractorV7:
             return None
         sizes = item.get("sizes") or {}
         ruta = sizes.get("large") or sizes.get("medium") or sizes.get("small")
-        resource = item.get("resource")
-        if not ruta or not resource:
+        resource = (item.get("resource") or "").strip()
+
+        # Si no hay ruta ni resource
+        if not ruta and not resource:
             return None
-        base = ruta if ruta.startswith("http") else f"{CDN_BASE_ASSETS}{ruta}"
-        if not base.endswith("/"):
-            base += "/"
-        return f"{base}{resource}"
+
+        # Si la ruta ya es una URL completa (formato actual de la API de Cinepolis)
+        if ruta and str(ruta).startswith("http"):
+            ruta_str = str(ruta)
+            if resource and not ruta_str.endswith(resource):
+                if ruta_str.endswith("/"):
+                    return f"{ruta_str}{resource}"
+                else:
+                    return f"{ruta_str}/{resource}"
+            return ruta_str.rstrip("/")
+
+        # Si resource es una URL completa
+        if resource and resource.startswith("http"):
+            return resource
+
+        # Si ruta es relativa (formato anterior de la API)
+        if ruta:
+            base = f"{CDN_BASE_ASSETS}{ruta}" if not str(ruta).startswith("http") else str(ruta)
+            if not base.endswith("/"):
+                base += "/"
+            return f"{base}{resource}" if resource else base.rstrip("/")
+
+        return None
 
     # ─── Procesamiento de JSON GraphQL ───
 
@@ -186,7 +236,7 @@ class MatildeExtractorV7:
             node = edge.get("node") or {}
             mid = node.get("id")
 
-            if self.modo_debug and not self._muestra_guardada and node:
+            if self.modo_debug and node:
                 try:
                     with open("muestra_movie_node.json", "w", encoding="utf-8") as fdebug:
                         json.dump(node, fdebug, ensure_ascii=False, indent=2)
@@ -198,11 +248,11 @@ class MatildeExtractorV7:
                 genero_crudo = node.get("genre", "")
                 media_list = node.get("media") or []
 
-                poster_item = self._buscar_en_media(media_list, ["poster", "movie_card"], tipo="image")
+                poster_item = self._buscar_en_media(media_list, ["poster", "movie_card", "poster_vertical", "poster_horizontal"], tipo="image")
                 poster_url = self._url_desde_media(poster_item)
-                banner_item = self._buscar_en_media(media_list, ["header_movie_detail", "header_purchase_flow"], tipo="image")
+                banner_item = self._buscar_en_media(media_list, ["header_movie_detail", "header_purchase_flow", "banner", "header", "carousel"], tipo="image")
                 banner_url = self._url_desde_media(banner_item)
-                trailer_item = self._buscar_en_media(media_list, ["trailer_mp4"], tipo="video")
+                trailer_item = self._buscar_en_media(media_list, ["trailer_mp4", "trailer", "video_mp4"], tipo="video")
                 trailer_url = self._url_desde_media(trailer_item)
 
                 self.peliculas_cache[mid] = {
@@ -521,6 +571,166 @@ class MatildeExtractorV7:
             else:
                 print(f"    [{ts()}] ADVERTENCIA: {nombre} sin peliculas (puede estar cerrado o sin cartelera)")
 
+    # ─── FASE 1.2: Enriquecer media (poster, banner, trailer) via API directa ───
+
+    def _fase12_enriquecer_media(self):
+        """Consulta la API GraphQL directamente para obtener poster_url, banner_url y trailer_url
+        de las peliculas que no los tienen. El frontend de Cinepolis a veces no incluye el campo
+        'media' en sus queries interceptadas por Playwright, asi que esta fase los obtiene aparte."""
+        peliculas_sin_poster = [
+            mid for mid, p in self.peliculas_cache.items()
+            if not p.get("poster_url")
+        ]
+
+        if not peliculas_sin_poster:
+            print(f"\n[{ts()}] [FASE 1.2] Todas las peliculas ya tienen poster. Saltando.")
+            return
+
+        print(f"\n[{ts()}] ══════════════════════════════════════════════════════════")
+        print(f"[{ts()}] FASE 1.2: Enriquecer media para {len(peliculas_sin_poster)}/{len(self.peliculas_cache)} peliculas sin poster")
+        print(f"[{ts()}] ══════════════════════════════════════════════════════════")
+
+        # Paso 1: Consultar catalogo general con media
+        payload = {
+            "operationName": "Movies",
+            "variables": {"countryId": "MX"},
+            "query": GRAPHQL_QUERY_MOVIES_MEDIA
+        }
+
+        intentos = 0
+        max_intentos = 5
+        catalogo_api = {}  # movie_id -> node
+
+        while intentos < max_intentos:
+            try:
+                response = self.session.post(API_URL, json=payload, timeout=30)
+
+                if response.status_code == 429:
+                    intentos += 1
+                    espera = 10 * (2 ** (intentos - 1))
+                    print(f"    [{ts()}] HTTP 429. Esperando {espera}s (intento {intentos})...")
+                    time.sleep(espera)
+                    self.session = self._crear_session()
+                    continue
+
+                if response.status_code != 200:
+                    print(f"    [{ts()}] HTTP {response.status_code}. Reintentando...")
+                    intentos += 1
+                    time.sleep(5)
+                    continue
+
+                data = response.json()
+                if data.get("errors"):
+                    print(f"    [{ts()}] Errores GraphQL: {data['errors'][0].get('message', '?')}")
+                    break
+
+                edges = (data.get("data") or {}).get("movies", {}).get("edges", [])
+                for edge in edges:
+                    node = edge.get("node") or {}
+                    mid = node.get("id")
+                    if mid:
+                        catalogo_api[mid] = node
+
+                print(f"    [{ts()}] Catalogo API obtenido: {len(catalogo_api)} peliculas")
+                break
+
+            except Exception as e:
+                intentos += 1
+                print(f"    [{ts()}] Error ({e}). Reintentando ({intentos}/{max_intentos})...")
+                time.sleep(5)
+                self.session = self._crear_session()
+
+        if not catalogo_api:
+            print(f"    [{ts()}] No se pudo obtener catalogo. Las peliculas quedaran sin poster.")
+            return
+
+        # Paso 2: Enriquecer peliculas_cache con media del catalogo API
+        enriquecidas = 0
+        for mid in peliculas_sin_poster:
+            node = catalogo_api.get(mid)
+            if not node:
+                continue
+
+            media_list = node.get("media") or []
+            if not media_list:
+                continue
+
+            poster_item = self._buscar_en_media(media_list, ["poster", "movie_card", "poster_vertical", "poster_horizontal"], tipo="image")
+            poster_url = self._url_desde_media(poster_item)
+            banner_item = self._buscar_en_media(media_list, ["header_movie_detail", "header_purchase_flow", "banner", "header", "carousel"], tipo="image")
+            banner_url = self._url_desde_media(banner_item)
+            trailer_item = self._buscar_en_media(media_list, ["trailer_mp4", "trailer", "video_mp4"], tipo="video")
+            trailer_url = self._url_desde_media(trailer_item)
+
+            if poster_url:
+                self.peliculas_cache[mid]["poster_url"] = poster_url
+            if banner_url:
+                self.peliculas_cache[mid]["banner_url"] = banner_url
+            if trailer_url:
+                self.peliculas_cache[mid]["trailer_url"] = trailer_url
+
+            # Tambien actualizar sinopsis si la actual esta vacia
+            sinopsis_api = node.get("synopsis", "") or ""
+            if sinopsis_api and (not self.peliculas_cache[mid].get("sinopsis") or self.peliculas_cache[mid]["sinopsis"] == "Sin sinopsis disponible"):
+                self.peliculas_cache[mid]["sinopsis"] = sinopsis_api
+
+            if poster_url or banner_url or trailer_url:
+                enriquecidas += 1
+                nombre = self.peliculas_cache[mid].get("nombre", mid)
+                print(f"    [{ts()}] ✓ {nombre}: poster={'SÍ' if poster_url else 'no'} banner={'SÍ' if banner_url else 'no'} trailer={'SÍ' if trailer_url else 'no'}")
+
+        # Paso 3: Fallback TMDB para peliculas que aun no tengan poster o sinopsis completa
+        restantes = [
+            (mid, p.get("nombre", mid)) for mid, p in self.peliculas_cache.items()
+            if not p.get("poster_url") or not p.get("sinopsis") or p.get("sinopsis") == "Sin sinopsis disponible" or len(p.get("sinopsis", "")) < 20
+        ]
+        if restantes:
+            print(f"\n[{ts()}] [FASE 1.2 TMDB] Consultando TMDB para {len(restantes)} peliculas sin poster/sinopsis...")
+            for mid, nombre in restantes:
+                tmdb_data = self._consultar_tmdb(nombre)
+                if tmdb_data:
+                    if not self.peliculas_cache[mid].get("poster_url") and tmdb_data.get("poster_url"):
+                        self.peliculas_cache[mid]["poster_url"] = tmdb_data["poster_url"]
+                        enriquecidas += 1
+                    if not self.peliculas_cache[mid].get("banner_url") and tmdb_data.get("banner_url"):
+                        self.peliculas_cache[mid]["banner_url"] = tmdb_data["banner_url"]
+                    if (not self.peliculas_cache[mid].get("sinopsis") or len(self.peliculas_cache[mid].get("sinopsis", "")) < 20 or self.peliculas_cache[mid]["sinopsis"] == "Sin sinopsis disponible") and tmdb_data.get("sinopsis"):
+                        self.peliculas_cache[mid]["sinopsis"] = tmdb_data["sinopsis"]
+                    print(f"    [{ts()}] ✓ TMDB {nombre}: poster={'SÍ' if self.peliculas_cache[mid].get('poster_url') else 'no'}")
+
+        # Resumen
+        ahora_con_poster = sum(1 for p in self.peliculas_cache.values() if p.get("poster_url"))
+        print(f"\n[{ts()}] ── Resumen Fase 1.2 ──")
+        print(f"[{ts()}] Peliculas enriquecidas: {enriquecidas}")
+        print(f"[{ts()}] Peliculas con poster: {ahora_con_poster}/{len(self.peliculas_cache)}")
+        print(f"[{ts()}] Peliculas sin poster: {len(self.peliculas_cache) - ahora_con_poster}")
+
+    def _consultar_tmdb(self, titulo: str) -> dict:
+        """Obtiene poster, banner y sinopsis desde TMDB si Cinepolis no los proporciona."""
+        import urllib.request
+        import urllib.parse
+        tmdb_key = "097fd457526d3f04a7ee9a8cc001bf60"
+        # Limpiar prefijos de funciones especiales como "Preventa: ", "Menú Temático: ", etc.
+        titulo_limpio = titulo.replace("Menú Temático", "").replace("Menu Tematico", "").replace("Trivia Night", "").strip(": ")
+        url = f"https://api.themoviedb.org/3/search/movie?api_key={tmdb_key}&language=es-MX&query={urllib.parse.quote(titulo_limpio)}"
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+                results = data.get("results") or []
+                if results:
+                    best = results[0]
+                    p_path = best.get("poster_path")
+                    b_path = best.get("backdrop_path")
+                    return {
+                        "poster_url": f"https://image.tmdb.org/t/p/w780{p_path}" if p_path else None,
+                        "banner_url": f"https://image.tmdb.org/t/p/w1280{b_path}" if b_path else None,
+                        "sinopsis": best.get("overview") or None
+                    }
+        except Exception:
+            pass
+        return {}
+
     # ─── FASE 2: Descarga de horarios via API ───
 
     def _consultar_api_horarios(self, complejo_slug, movie_id):
@@ -695,6 +905,9 @@ class MatildeExtractorV7:
         # FASE 1.5: Fallback API-first para complejos faltantes
         self._fase15_fallback_api()
 
+        # FASE 1.2: Enriquecer media (poster, banner, trailer) via API directa
+        self._fase12_enriquecer_media()
+
         # FASE 2: Descarga profunda de horarios
         self._fase2()
 
@@ -744,7 +957,8 @@ class ExportadorVisionWorker:
             def _sql_val(v):
                 if not v:
                     return "NULL"
-                return "'" + str(v).replace("'", "''") + "'"
+                clean = " ".join(str(v).split()).replace("'", "''")
+                return f"'{clean}'"
 
             poster_sql = _sql_val(p.get("poster_url"))
             banner_sql = _sql_val(p.get("banner_url"))
@@ -756,7 +970,11 @@ class ExportadorVisionWorker:
                 f"INSERT INTO PELICULA (vista_id, titulo, slug, clasificacion, genero, duracion_min, sinopsis, categoria, poster_url, banner_url, trailer_url) "
                 f"VALUES ('{vista_id}', '{n}', '{mid}', '{cl}', '{ge}', {dur}, {sinopsis_sql}, '{cat}', {poster_sql}, {banner_sql}, {trailer_sql}) "
                 f"ON CONFLICT (slug) DO UPDATE SET clasificacion = EXCLUDED.clasificacion, categoria = EXCLUDED.categoria, "
-                f"sinopsis = COALESCE(EXCLUDED.sinopsis, PELICULA.sinopsis), "
+                f"sinopsis = CASE "
+                f"    WHEN EXCLUDED.sinopsis IS NOT NULL AND EXCLUDED.sinopsis != '' AND EXCLUDED.sinopsis != 'Sin sinopsis disponible' AND LENGTH(EXCLUDED.sinopsis) > 5 "
+                f"    THEN EXCLUDED.sinopsis "
+                f"    ELSE PELICULA.sinopsis "
+                f"END, "
                 f"poster_url = COALESCE(EXCLUDED.poster_url, PELICULA.poster_url), "
                 f"banner_url = COALESCE(EXCLUDED.banner_url, PELICULA.banner_url), "
                 f"trailer_url = COALESCE(EXCLUDED.trailer_url, PELICULA.trailer_url);"
@@ -882,6 +1100,167 @@ AND NOT EXISTS (
                 writer.writerows(self.funciones)
             print(f"  [CSV] {ruta_funciones} guardado exitosamente.")
 
+    def aplicar_bd(self, db_url="postgresql://postgres:1234@localhost:5432/secret_wars"):
+        """Inyecta directamente peliculas y funciones a la base de datos PostgreSQL de forma transaccional."""
+        print(f"\n[{ts()}] ══════════════════════════════════════════════════")
+        print(f"[{ts()}] INYECCION DIRECTA A POSTGRESQL")
+        print(f"[{ts()}] ══════════════════════════════════════════════════")
+        try:
+            from sqlalchemy import create_engine, text
+            engine = create_engine(db_url)
+            with engine.begin() as conn:
+                # 0. Preparacion
+                conn.execute(text("ALTER TABLE PELICULA DROP CONSTRAINT IF EXISTS pelicula_vista_id_key;"))
+                conn.execute(text("ALTER TABLE FUNCION ADD COLUMN IF NOT EXISTS activa BOOLEAN NOT NULL DEFAULT TRUE;"))
+                conn.execute(text("ALTER TABLE FUNCION DROP CONSTRAINT IF EXISTS uq_funcion_logica;"))
+                conn.execute(text("ALTER TABLE FUNCION ADD CONSTRAINT uq_funcion_logica UNIQUE (sala_id, fecha_funcion, hora_inicio);"))
+
+                # 1. Upsert Peliculas
+                query_peli = text("""
+                    INSERT INTO PELICULA (vista_id, titulo, slug, clasificacion, genero, duracion_min, sinopsis, categoria, poster_url, banner_url, trailer_url)
+                    VALUES (:vista_id, :titulo, :slug, :clasificacion, :genero, :duracion_min, :sinopsis, :categoria, :poster_url, :banner_url, :trailer_url)
+                    ON CONFLICT (slug) DO UPDATE SET
+                        clasificacion = EXCLUDED.clasificacion,
+                        categoria = EXCLUDED.categoria,
+                        genero = EXCLUDED.genero,
+                        duracion_min = EXCLUDED.duracion_min,
+                        sinopsis = CASE 
+                            WHEN EXCLUDED.sinopsis IS NOT NULL AND EXCLUDED.sinopsis != '' AND EXCLUDED.sinopsis != 'Sin sinopsis disponible' AND LENGTH(EXCLUDED.sinopsis) > 5
+                            THEN EXCLUDED.sinopsis 
+                            ELSE PELICULA.sinopsis 
+                        END,
+                        poster_url = COALESCE(EXCLUDED.poster_url, PELICULA.poster_url),
+                        banner_url = COALESCE(EXCLUDED.banner_url, PELICULA.banner_url),
+                        trailer_url = COALESCE(EXCLUDED.trailer_url, PELICULA.trailer_url);
+                """)
+
+                pelis_ok = 0
+                for mid, p in self.peliculas_cache.items():
+                    vista_id = p.get("vista_id") or mid
+                    cl = p.get("clasificacion", "A")
+                    if cl not in ['AA', 'A', 'B', 'B15', 'C']:
+                        cl = 'A'
+                    dur_str = str(p.get("duracion_min", "120"))
+                    dur = int(''.join(filter(str.isdigit, dur_str)) or "120")
+                    sinopsis_val = " ".join(str(p.get("sinopsis", "") or "Sin sinopsis disponible").split())
+
+                    conn.execute(query_peli, {
+                        "vista_id": str(vista_id),
+                        "titulo": str(p.get("nombre", "")),
+                        "slug": str(mid),
+                        "clasificacion": cl,
+                        "genero": str(p.get("genero", "")),
+                        "duracion_min": dur,
+                        "sinopsis": sinopsis_val,
+                        "categoria": p.get("categoria", "Cartelera"),
+                        "poster_url": p.get("poster_url"),
+                        "banner_url": p.get("banner_url"),
+                        "trailer_url": p.get("trailer_url")
+                    })
+                    pelis_ok += 1
+
+                print(f"  [{ts()}] [BD] {pelis_ok} peliculas sincronizadas en PostgreSQL.")
+
+                # 2. Salas y formatos
+                salas_vistas = set()
+                infra_map = {
+                    "Tradicional": "Tradicional", "VIP": "VIP", "Macro XE": "MACRO XE",
+                    "XE": "MACRO XE", "IMAX": "IMAX", "4DX": "4DX", "Junior": "Junior",
+                    "SJ": "Junior", "SP": "Tradicional"
+                }
+                for f in self.funciones:
+                    clave = (f["complejo_slug"], f["numero_sala"])
+                    if clave not in salas_vistas:
+                        salas_vistas.add(clave)
+                        tipo_s = infra_map.get(f.get("experiencia"), "Tradicional")
+                        conn.execute(text("""
+                            INSERT INTO SALA (numero_sala, nombre_sala, capacidad_asientos, tipo_sala, complejo_id)
+                            SELECT :num, :nom, 100, :tipo, c.complejo_id
+                            FROM COMPLEJO c WHERE c.slug = :slug
+                            ON CONFLICT (complejo_id, numero_sala) DO NOTHING;
+                        """), {"num": int(f["numero_sala"]), "nom": f"Sala {f['numero_sala']}", "tipo": tipo_s, "slug": f["complejo_slug"]})
+
+                    fmt = f.get("formato", "2D")
+                    if fmt not in ['2D', '3D', 'IMAX 3D']:
+                        fmt = '2D'
+                    conn.execute(text("""
+                        INSERT INTO SALA_FORMATO_SALA (sala_id, formato_id)
+                        SELECT s.sala_id, fs.formato_id FROM SALA s JOIN COMPLEJO c ON s.complejo_id = c.complejo_id
+                        CROSS JOIN FORMATO_SALA fs WHERE c.slug = :slug AND s.numero_sala = :num AND fs.nombre_formato = :fmt
+                        ON CONFLICT DO NOTHING;
+                    """), {"slug": f["complejo_slug"], "num": int(f["numero_sala"]), "fmt": fmt})
+
+                # 3. Temp table & Funciones
+                conn.execute(text("CREATE TEMP TABLE tmp_funciones_activas (complejo_slug VARCHAR, numero_sala INT, fecha DATE, hora_inicio TIME);"))
+
+                query_func = text("""
+                    INSERT INTO FUNCION (fecha_funcion, hora_inicio, hora_termino, idioma, es_preventa, formato_id, sala_id, pelicula_id, activa)
+                    SELECT :fecha, :hora_ini, :hora_fin, :idioma, FALSE, fs.formato_id, s.sala_id, p.pelicula_id, TRUE
+                    FROM COMPLEJO c JOIN SALA s ON s.complejo_id = c.complejo_id CROSS JOIN FORMATO_SALA fs CROSS JOIN PELICULA p
+                    WHERE c.slug = :slug AND s.numero_sala = :num AND fs.nombre_formato = :fmt AND p.slug = :mid
+                    ON CONFLICT (sala_id, fecha_funcion, hora_inicio) DO UPDATE SET activa = TRUE, formato_id = EXCLUDED.formato_id, pelicula_id = EXCLUDED.pelicula_id;
+                """)
+
+                funcs_ok = 0
+                for f in self.funciones:
+                    try:
+                        dt_obj = datetime.fromisoformat(f["datetime"])
+                        fecha = dt_obj.strftime("%Y-%m-%d")
+                        hora_raw = int(dt_obj.strftime("%H"))
+                        hora_correcta = hora_raw % 24
+                        hora_ini = f"{hora_correcta:02d}:{dt_obj.strftime('%M:%S')}"
+                        hora_fin = f"{(hora_raw + 2) % 24:02d}:{dt_obj.strftime('%M:%S')}"
+                    except Exception:
+                        continue
+
+                    idioma_raw = str(f.get("idioma", "")).upper()
+                    if "SUB" in idioma_raw:
+                        idioma_val = "Subtitulada"
+                    elif "DOB" in idioma_raw:
+                        idioma_val = "Doblada"
+                    else:
+                        idioma_val = "Español"
+
+                    fmt = f.get("formato", "2D")
+                    if fmt not in ['2D', '3D', 'IMAX 3D']:
+                        fmt = '2D'
+
+                    conn.execute(text("INSERT INTO tmp_funciones_activas VALUES (:slug, :num, :fecha, :hora);"),
+                                 {"slug": f["complejo_slug"], "num": int(f["numero_sala"]), "fecha": fecha, "hora": hora_ini})
+
+                    conn.execute(query_func, {
+                        "fecha": fecha, "hora_ini": hora_ini, "hora_fin": hora_fin,
+                        "idioma": idioma_val, "slug": f["complejo_slug"], "num": int(f["numero_sala"]),
+                        "fmt": fmt, "mid": f["movie_id"]
+                    })
+                    funcs_ok += 1
+
+                print(f"  [{ts()}] [BD] {funcs_ok} funciones sincronizadas en PostgreSQL.")
+
+                # 4. Soft-delete seguro
+                if len(self.funciones) >= 500:
+                    conn.execute(text("""
+                        UPDATE FUNCION f
+                        SET activa = FALSE
+                        WHERE fecha_funcion >= CURRENT_DATE
+                        AND NOT EXISTS (
+                            SELECT 1 FROM tmp_funciones_activas t
+                            JOIN COMPLEJO c ON c.slug = t.complejo_slug
+                            JOIN SALA s ON s.complejo_id = c.complejo_id AND s.numero_sala = t.numero_sala
+                            WHERE f.sala_id = s.sala_id AND f.fecha_funcion = t.fecha AND f.hora_inicio = t.hora_inicio
+                        );
+                    """))
+                    print(f"  [{ts()}] [BD] Soft-delete ejecutado con exito.")
+                else:
+                    print(f"  [{ts()}] [BD] Fail-safe: Pocas funciones ({len(self.funciones)}), soft-delete omitido.")
+
+                conn.execute(text("DROP TABLE IF EXISTS tmp_funciones_activas;"))
+
+            print(f"[{ts()}] Sincronizacion directa con PostgreSQL completada exitosamente!")
+        except Exception as e:
+            print(f"[{ts()}] Advertencia BD: No se pudo conectar/actualizar directamente en PostgreSQL ({e}).")
+            print(f"[{ts()}] Los archivos SQL, JSON y CSV se guardaron correctamente para ejecucion manual.")
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # MAIN
@@ -903,6 +1282,7 @@ def main():
         exportador.guardar_sql()
         exportador.guardar_json()
         exportador.guardar_csv()
+        exportador.aplicar_bd()
 
         duracion = time.time() - inicio
         minutos = int(duracion // 60)

@@ -1,0 +1,87 @@
+{
+  "id": "el-ultimo-gran-golpe",
+  "name": "El Último Gran Golpe",
+  "synopsis": "Después de ser víctima del robo de una enorme suma de dinero, Manco Kapak (Russell Crowe), un poderoso dueño de clubes nocturnos ve cómo su plan de retirarse y vender sus negocios se desmorona. Mientras un peligroso cártel exige respuestas y un misterioso comprador llamado Joe Carver (Luke Evans) busca quedarse con sus clubes, el verdadero ladrón y su nueva pareja deciden convertir a Manco en su objetivo favorito, desencadenando una cadena de engaños, traiciones y golpes cada vez más arriesgados.",
+  "media": [
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "movie_card",
+      "sizes": {
+        "large": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/900x900_24/",
+        "medium": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/900x900_24/",
+        "small": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/900x900_24/"
+      }
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "header_purchase_flow",
+      "sizes": {
+        "large": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/1440x502_39/",
+        "medium": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/1440x502_39/",
+        "small": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/1440x502_39/"
+      }
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "poster",
+      "sizes": {
+        "large": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/P_ster_720x1022px__1/",
+        "medium": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/107x160_54/",
+        "small": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/80x80_54/"
+      }
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "header_movie_detail",
+      "sizes": {
+        "large": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/1440x900_55/",
+        "medium": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/1440x900_55/",
+        "small": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/1440x900_55/"
+      }
+    },
+    {
+      "resource": "resource.mp4",
+      "type": "video",
+      "code": "trailer_mp4",
+      "sizes": {
+        "large": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/6a7506c995ec3ultimograngolpe/",
+        "medium": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/6a7506c995ec3ultimograngolpe/",
+        "small": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/6a7506c995ec3ultimograngolpe/"
+      }
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/Still_767x496px_1_/",
+        "medium": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/Still_767x496px_1_/",
+        "small": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/Still_767x496px_1_/"
+      }
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/Still_767x496px_2_/",
+        "medium": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/Still_767x496px_2_/",
+        "small": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/Still_767x496px_2_/"
+      }
+    },
+    {
+      "resource": "resource.jpg",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/Still_767x496px_3_/",
+        "medium": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/Still_767x496px_3_/",
+        "small": "/pimcore/21504/assets/Mexico/Tickets/Movies/ElultimoGranGolpe/Es/Still_767x496px_3_/"
+      }
+    }
+  ]
+}

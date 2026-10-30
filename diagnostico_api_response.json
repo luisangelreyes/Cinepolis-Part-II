@@ -1,0 +1,23 @@
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Unknown argument 'cinemas' on field 'Query.billboardByCinema'.",
+      "locations": [
+        {
+          "line": 25,
+          "column": 44
+        }
+      ]
+    },
+    {
+      "message": "Field 'billboardByCinema' argument 'cinemaId' of type 'String!' is required, but it was not provided.",
+      "locations": [
+        {
+          "line": 25,
+          "column": 3
+        }
+      ]
+    }
+  ]
+}
