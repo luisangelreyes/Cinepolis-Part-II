@@ -2,7 +2,6 @@
 =============================================================================
 EXTRACTOR MATILDE — v7.0 (BLINDADO: PLAYWRIGHT + CURL_CFFI + FALLBACK TOTAL)
 =============================================================================
-Filosofia: "NUNCA RENDIRSE" — cada complejo DEBE tener funciones al final.
 
 Mecanismos de Defensa:
   1. Fase 0: Playwright VISIBLE con bypass Cloudflare inicial.

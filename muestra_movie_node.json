@@ -1,21 +1,21 @@
 {
-  "id": "stray-kids-world-tour-run-it-live-viewing",
+  "id": "bts-world-tour-arirang-in-sao-paulo",
   "type": "",
   "countryId": "MX",
-  "name": "Stray Kids World Tour <RUN IT> LIVE VIEWING",
-  "originalName": "Stray Kids World Tour <RUN IT> LIVE VIEWING",
+  "name": "BTS WORLD TOUR 'ARIRANG' IN SÃO PAULO: EN VIVO",
+  "originalName": "BTS WORLD TOUR 'ARIRANG' IN SÃO PAULO: EN VIVO",
   "distributor": "+QueCine",
   "rating": "TBC",
   "ratingDescription": " ",
-  "position": "98",
+  "position": "55",
   "genre": [
     "CONCIERTO"
   ],
-  "synopsis": "Por primera vez, Stray Kids presenta una transmisión especial en vivo de «Stray Kids World Tour » desde el Tokyo Dome en cines de todo el mundo. Fiel al título de la gira,  refleja el impulso del grupo por adentrarse en mundos más grandes y subir a escenarios más audaces. Los ocho miembros (Bang Chan, Lee Know, Changbin, Hyunjin, HAN, Felix, Seungmin e I.N) desatan una energía imparable a través de coreografías explosivas y voces potentes, llevando la experiencia en vivo a su punto más álgido. Su presentación empieza con «Hall of Fame», una canción que expresa la ambición de Stray Kids de escribir su propia historia, trazando su crecimiento musical desde el principio hasta donde están ahora. La producción se enriquece aún más con montajes escénicos dinámicos, toques de espectáculos tradicionales coreanos y una iluminación láser espectacular, todo diseñado para que el público —tanto en el estadio como en el cine— se ponga de pie, cante, baile y celebre junto con los artistas. Grabado en vivo desde Tokio y transmitido a cines de todo el mundo, este evento de proyección en vivo te permite a ti, como parte de STAY, disfrutar de la magnitud, el espectáculo y la energía pura del show en vivo de Stray Kids —todos juntos, en la pantalla grande.",
+  "synopsis": "BTS WORLD TOUR 'ARIRANG' IN SÃO PAULO: LIVE VIEWING ¡Vive la experiencia BTS WORLD TOUR 'ARIRANG' en cines de todo el mundo, transmitida desde São Paulo, Brasil! Como colofón de su gira por Latinoamérica, este concierto monumental llevará directamente a la pantalla grande toda la energía explosiva del estadio repleto de Brasil. Las transmisiones en algunos territorios están programadas en horario diferido para adaptarse a los husos horarios locales.",
   "length": "195 min",
   "availableForSale": true,
   "alerts": [],
-  "releaseDate": "2026-11-07T06:00",
+  "releaseDate": "2026-10-30T06:00",
   "languages": [
     "es",
     "en"
@@ -36,9 +36,9 @@
       "type": "image",
       "code": "poster",
       "sizes": {
-        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_720x1022_copia.jpg",
-        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/Poster_WEB_Desktop_107x160px_45__2.jpg",
-        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_80x80_1.jpg",
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/Poster_WEB_Desktop_720x1022px_37__6.jpg",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/Poster_WEB_Desktop_107x160px_37__6.jpg",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/Poster_WEB_Mobile_80x80px_34__6.jpg",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -48,9 +48,9 @@
       "type": "image",
       "code": "movie_card",
       "sizes": {
-        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_900x900.jpg",
-        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_900x900.jpg",
-        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_900x900.jpg",
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/MovieCard_WEB_Desktop_900x900px_36_.jpg",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/MovieCard_WEB_Desktop_900x900px_36_.jpg",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/MovieCard_WEB_Desktop_900x900px_36_.jpg",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -60,9 +60,9 @@
       "type": "image",
       "code": "header_movie_detail",
       "sizes": {
-        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x900_2.jpg",
-        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x900_2.jpg",
-        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x900_2.jpg",
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/HeaderMovieDetails_WEB_Desktop_1440x900px_37__6.jpg",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/HeaderMovieDetails_WEB_Desktop_1440x900px_37__6.jpg",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/HeaderMovieDetails_WEB_Desktop_1440x900px_37__6.jpg",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -72,21 +72,45 @@
       "type": "image",
       "code": "header_purchase_flow",
       "sizes": {
-        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x502.jpg",
-        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x502.jpg",
-        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/StrayKids_LiveViewing_1440x502.jpg",
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/HeaderPurchaseFlow_WEB_Desktop_1440x502px_37__1.jpg",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/HeaderPurchaseFlow_WEB_Desktop_1440x502px_37__1.jpg",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/HeaderPurchaseFlow_WEB_Desktop_1440x502px_37__1.jpg",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
     },
     {
       "resource": "",
-      "type": "video",
-      "code": "trailer_mp4",
+      "type": "image",
+      "code": "carousel",
       "sizes": {
-        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/6ad112c94c215-Stray_Kids_World_Tour_30_Trailer_SPANISH_W8_1366x770.mp4",
-        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/6ad112c94c215-Stray_Kids_World_Tour_30_Trailer_SPANISH_W8_1366x770.mp4",
-        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/StrayKidsWorldTourRUNITLIVEVIEWING/Es/6ad112c94c215-Stray_Kids_World_Tour_30_Trailer_SPANISH_W8_1366x770.mp4",
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/web_2.jpg",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/web_2.jpg",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/web_2.jpg",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/web_3.jpg",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/web_3.jpg",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/web_3.jpg",
+        "__typename": "SizeInfo"
+      },
+      "__typename": "MediaInfo"
+    },
+    {
+      "resource": "",
+      "type": "image",
+      "code": "carousel",
+      "sizes": {
+        "large": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/web1.jpg",
+        "medium": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/web1.jpg",
+        "small": "https://pimcore-content.cinepolis.com/assets/Mexico/Tickets/Movies/BTSWORLDTOURARIRANGINSAOPAULO/Es/web1.jpg",
         "__typename": "SizeInfo"
       },
       "__typename": "MediaInfo"
@@ -95,9 +119,7 @@
   "cities": [],
   "cinemas": [],
   "categories": [
-    "pre-sale",
-    "now-playing",
-    "coming-soon"
+    "now-playing"
   ],
   "experiences": [
     {
