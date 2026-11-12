@@ -1,0 +1,102 @@
+<div class="cinema-container">
+  <!-- Encabezado de la Función -->
+  <header class="header-sala">
+    <div class="pelicula-info">
+      <span class="badge-clasificacion">{{ mapa()?.clasificacion || 'B' }}</span>
+      <h2>{{ mapa()?.pelicula }}</h2>
+      <p class="detalles-sub">{{ mapa()?.sala }} • {{ mapa()?.horaInicio }} hrs • {{ mapa()?.duracionMin }} min</p>
+    </div>
+
+    <!-- Indicador de SignalR en Tiempo Real -->
+    <div class="signalr-status" [ngClass]="signalR.estadoConexion()">
+      <span class="dot-indicator"></span>
+      <span class="status-text">
+        @if (signalR.estadoConexion() === 'conectado') {
+          En vivo (SignalR Conectado)
+        } @else if (signalR.estadoConexion() === 'conectando') {
+          Conectando WebSocket...
+        } @else {
+          Sin conexión WebSocket
+        }
+      </span>
+    </div>
+  </header>
+
+  <!-- Notificación flotante de evento en tiempo real -->
+  @if (signalR.ultimoEvento(); as evento) {
+    <div class="banner-evento" [ngClass]="evento.tipo">
+      <span>⚡ Actualización en tiempo real: Asiento <strong>{{ evento.codigoAsiento }}</strong> {{ evento.tipo === 'bloqueado' ? 'bloqueado por otro usuario' : 'ha sido liberado' }}</span>
+    </div>
+  }
+
+  <!-- Pantalla de Cine -->
+  <div class="pantalla-box">
+    <div class="curva-pantalla"></div>
+    <span class="pantalla-label">PANTALLA</span>
+  </div>
+
+  <!-- Grilla de Asientos (Angular Signals directo al DOM) -->
+  <div class="sala-grid">
+    @for (fila of filasOrdenadas(); track fila) {
+      <div class="fila-row">
+        <span class="letra-fila">{{ fila }}</span>
+        <div class="asientos-fila">
+          @for (asiento of mapa()?.filas?.[fila]; track asiento.asientoId) {
+            <button 
+              type="button"
+              class="asiento-btn"
+              [ngClass]="getEstadoAsiento(asiento)"
+              [disabled]="asiento.estado === 'ocupado' || signalR.asientosBloqueadosEnVivo().has(asiento.etiqueta)"
+              (click)="toggleAsiento(asiento)"
+              [title]="asiento.etiqueta">
+              {{ asiento.columna }}
+            </button>
+          }
+        </div>
+        <span class="letra-fila">{{ fila }}</span>
+      </div>
+    }
+  </div>
+
+  <!-- Simbología -->
+  <div class="simbologia">
+    <div class="item-simbologia">
+      <span class="asiento-sample disponible"></span>
+      <span>Disponible</span>
+    </div>
+    <div class="item-simbologia">
+      <span class="asiento-sample seleccionado"></span>
+      <span>Tu Selección</span>
+    </div>
+    <div class="item-simbologia">
+      <span class="asiento-sample bloqueado-tiempo-real"></span>
+      <span>Reservado en vivo</span>
+    </div>
+    <div class="item-simbologia">
+      <span class="asiento-sample ocupado"></span>
+      <span>Vendido</span>
+    </div>
+  </div>
+
+  <!-- Barra de Checkout Inferior -->
+  <footer class="footer-checkout">
+    <div class="resumen-boletos">
+      <span class="label-boletos">Asientos seleccionados:</span>
+      <strong class="lista-asientos">
+        {{ misAsientosSeleccionados().length > 0 ? misAsientosSeleccionados().join(', ') : 'Ninguno seleccionado' }}
+      </strong>
+    </div>
+
+    <div class="total-box">
+      <div class="monto">
+        <span class="monto-label">Total:</span>
+        <strong class="monto-precio">${{ totalPagar() }} MXN</strong>
+      </div>
+      <button 
+        class="btn-continuar" 
+        [disabled]="misAsientosSeleccionados().length === 0">
+        Continuar al pago ({{ misAsientosSeleccionados().length }})
+      </button>
+    </div>
+  </footer>
+</div>

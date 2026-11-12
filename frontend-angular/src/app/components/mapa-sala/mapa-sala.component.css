@@ -1,0 +1,306 @@
+.cinema-container {
+  max-width: 950px;
+  margin: 0 auto;
+  padding: 24px;
+  background-color: #0b132b;
+  color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.header-sala {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #1c2541;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.badge-clasificacion {
+  background: #f59e0b;
+  color: #000;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+.pelicula-info h2 {
+  margin: 0 0 4px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.detalles-sub {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.signalr-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #1c2541;
+}
+
+.signalr-status .dot-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #64748b;
+}
+
+.signalr-status.conectado {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+.signalr-status.conectado .dot-indicator {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.signalr-status.conectando {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+.signalr-status.conectando .dot-indicator {
+  background: #f59e0b;
+  animation: pulse 1s infinite;
+}
+
+.signalr-status.desconectado, .signalr-status.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+.signalr-status.desconectado .dot-indicator, .signalr-status.error .dot-indicator {
+  background: #ef4444;
+}
+
+.banner-evento {
+  padding: 10px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  animation: slideDown 0.3s ease;
+}
+
+.banner-evento.bloqueado {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid #f59e0b;
+  color: #fef08a;
+}
+
+.banner-evento.liberado {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10b981;
+  color: #a7f3d0;
+}
+
+.pantalla-box {
+  text-align: center;
+  margin: 20px 0 35px 0;
+}
+
+.curva-pantalla {
+  height: 6px;
+  background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+  border-radius: 50%;
+  margin: 0 auto 8px auto;
+  box-shadow: 0 0 15px #38bdf8;
+}
+
+.pantalla-label {
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.sala-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.fila-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.letra-fila {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  width: 16px;
+  text-align: center;
+}
+
+.asientos-fila {
+  display: flex;
+  gap: 6px;
+}
+
+.asiento-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px 6px 2px 2px;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.asiento-btn.disponible {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+}
+.asiento-btn.disponible:hover {
+  background: #3b82f6;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
+}
+
+.asiento-btn.seleccionado {
+  background: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 0 10px #38bdf8;
+  transform: scale(1.08);
+}
+
+.asiento-btn.bloqueado-tiempo-real {
+  background: #d97706;
+  color: #ffffff;
+  cursor: not-allowed;
+  animation: pulse 1.5s infinite;
+}
+
+.asiento-btn.ocupado {
+  background: #334155;
+  color: #475569;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.simbologia {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  padding: 16px;
+  background: #111d40;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.item-simbologia {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.asiento-sample {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.asiento-sample.disponible { background: #1e293b; border: 1px solid #334155; }
+.asiento-sample.seleccionado { background: #0284c7; }
+.asiento-sample.bloqueado-tiempo-real { background: #d97706; }
+.asiento-sample.ocupado { background: #334155; }
+
+.footer-checkout {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1c2541;
+  padding: 18px 24px;
+  border-radius: 12px;
+}
+
+.label-boletos {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.lista-asientos {
+  font-size: 15px;
+  color: #38bdf8;
+}
+
+.total-box {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.monto {
+  text-align: right;
+}
+
+.monto-label {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.monto-precio {
+  font-size: 20px;
+  color: #f8fafc;
+}
+
+.btn-continuar {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-continuar:hover:not(:disabled) {
+  background: #1d4ed8;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+
+.btn-continuar:disabled {
+  background: #334155;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

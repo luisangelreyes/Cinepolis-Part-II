@@ -56,3 +56,10 @@ workers/*.json
 workers/*.csv
 workers/*.html
 workers/*.sql
+
+# ----- .NET / C# -----
+bin/
+obj/
+*.user
+*.suo
+.vs/
