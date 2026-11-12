@@ -77,3 +77,4 @@ public class AsientosController : ControllerBase
         return Ok(new { exito = true, mensaje = $"Asiento {request.CodigoAsiento} liberado." });
     }
 }
+

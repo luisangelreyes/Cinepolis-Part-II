@@ -29,3 +29,4 @@ export class CarteleraService {
     return this.http.post(`${this.apiUrl}/asientos/liberar`, request);
   }
 }
+

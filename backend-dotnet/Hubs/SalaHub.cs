@@ -52,3 +52,4 @@ public class SalaHub : Hub<ISalaClient>
         await base.OnDisconnectedAsync(exception);
     }
 }
+

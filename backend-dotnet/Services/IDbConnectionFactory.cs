@@ -25,3 +25,4 @@ public class NpgsqlConnectionFactory : IDbConnectionFactory
         return connection;
     }
 }
+

@@ -86,3 +86,4 @@ public class BloqueoAsientoResponse
     public string? CodigoAsiento { get; set; }
     public DateTime? ExpiracionUtc { get; set; }
 }
+

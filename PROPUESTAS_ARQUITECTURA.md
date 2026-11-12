@@ -112,7 +112,7 @@ La **Propuesta 1 (FastAPI + React 19 + Expo Mobile + Kong Gateway + Redis)** es 
 │  REUTILIZACIÓN 70%   │        │     CERO RIESGO      │        │  TIEMPO REAL NATIVO  │        │   EXPERIENCIA APP    │
 │  Zustand, TanStack y │        │  Tus 24 endpoints y  │        │  Con Redis locks, el │        │  Apple Wallet, QR    │
 │  TypeScript comparti-│        │  consultas SQL de BD │        │  mapa de salas opera │        │  offline, FaceID y   │
-│  dos entre Web y App │        │  quedan intactos al  │        │  en sub-milisegundos │        │  detección de cine   │
+│  dos entre Web y App │        │  quedan intactos al       │        │  en sub-milisegundos │        │  detección de cine   │
 │  con React + Expo.   │        │  100% sin reescribir.│        │  sin duplicar ventas.│        │  por GPS integrados. │
 └──────────────────────┘        └──────────────────────┘        └──────────────────────┘        └──────────────────────┘
 ```

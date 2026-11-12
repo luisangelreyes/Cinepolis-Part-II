@@ -53,3 +53,4 @@ export interface BloqueoAsientoRequest {
   codigoAsiento: string;
   usuarioId: string;
 }
+
